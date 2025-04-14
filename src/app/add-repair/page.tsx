@@ -20,6 +20,8 @@ interface Service {
   description: string;
 }
 
+type RepairStatus = 'Изпратена оферта' | 'В процес' | 'Завършен' | 'Отказан';
+
 export default function AddRepairPage() {
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
@@ -34,6 +36,7 @@ export default function AddRepairPage() {
     repairs: '',
     cost: '',
     additionalInfo: '',
+    status: 'Изпратена оферта' as RepairStatus,
   });
 
   useEffect(() => {
@@ -151,7 +154,7 @@ export default function AddRepairPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -202,6 +205,25 @@ export default function AddRepairPage() {
                   {service.name} - {service.price} лв.
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+              Статус
+            </label>
+            <select
+              id="status"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="Изпратена оферта">Изпратена оферта</option>
+              <option value="В процес">В процес</option>
+              <option value="Завършен">Завършен</option>
+              <option value="Отказан">Отказан</option>
             </select>
           </div>
 
