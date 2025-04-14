@@ -44,14 +44,30 @@ export default function RepairsPage() {
         import('pdfmake/build/vfs_fonts').then(vfsFontsModule => {
           const pdfMakeInstance = pdfMakeModule.default || pdfMakeModule;
 
-          // Handle different module formats
-          if (vfsFontsModule.default && vfsFontsModule.default.pdfMake && vfsFontsModule.default.pdfMake.vfs) {
-            pdfMakeInstance.vfs = vfsFontsModule.default.pdfMake.vfs;
-          } else if (vfsFontsModule.pdfMake && vfsFontsModule.pdfMake.vfs) {
-            pdfMakeInstance.vfs = vfsFontsModule.pdfMake.vfs;
-          }
+          // Use type assertions to avoid TypeScript errors
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const vfsFonts = vfsFontsModule as any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pdfInstance = pdfMakeInstance as any;
 
-          setPdfMake(pdfMakeInstance);
+          try {
+            // Try different possible structures of the fonts module
+            if (vfsFonts.default?.pdfMake?.vfs) {
+              pdfInstance.vfs = vfsFonts.default.pdfMake.vfs;
+            } else if (vfsFonts.pdfMake?.vfs) {
+              pdfInstance.vfs = vfsFonts.pdfMake.vfs;
+            } else if (vfsFonts.default?.vfs) {
+              pdfInstance.vfs = vfsFonts.default.vfs;
+            } else if (vfsFonts.vfs) {
+              pdfInstance.vfs = vfsFonts.vfs;
+            } else {
+              console.warn('Could not find VFS in the pdfmake fonts module');
+            }
+
+            setPdfMake(pdfInstance);
+          } catch (err) {
+            console.error('Error setting up PDF fonts:', err);
+          }
         }).catch(err => {
           console.error('Error loading fonts:', err);
         });
