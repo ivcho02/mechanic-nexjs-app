@@ -1,13 +1,17 @@
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
+import { Metadata } from "next";
+import ResponsiveNavbar from "@/components/ResponsiveNavbar";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Автосервиз",
   description: "Система за управление на автосервиз",
+  viewport: "width=device-width, initial-scale=1",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -19,18 +23,7 @@ export default function RootLayout({
     <html lang="bg">
       <body className={inter.className} suppressHydrationWarning>
         <div className="min-h-screen flex flex-col">
-          <header className="bg-blue-600 text-white py-4">
-            <div className="container mx-auto px-4">
-              <nav className="flex justify-between items-center">
-                <div className="flex space-x-6">
-                  <Link href="/" className="hover:text-blue-200">Начало</Link>
-                  <Link href="/clients" className="hover:text-blue-200">Клиенти</Link>
-                  <Link href="/repairs" className="hover:text-blue-200">Ремонти</Link>
-                  <Link href="/services" className="hover:text-blue-200">Услуги</Link>
-                </div>
-              </nav>
-            </div>
-          </header>
+          <ResponsiveNavbar />
 
           <main className="flex-grow">
             {children}

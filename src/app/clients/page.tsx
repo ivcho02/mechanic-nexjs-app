@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Link from 'next/link';
 
 interface Client {
   id: string;
@@ -16,21 +17,35 @@ interface Client {
   };
 }
 
+type SortField = 'date' | 'name' | 'car';
+type SortOrder = 'asc' | 'desc';
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   useEffect(() => {
     fetchClients();
   }, []);
 
   const fetchClients = async () => {
-    const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    const clientsData = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Client[];
-    setClients(clientsData);
+    setIsLoading(true);
+    try {
+      const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const clientsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Client[];
+      setClients(clientsData);
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatDate = (timestamp: { seconds: number; nanoseconds: number }) => {
@@ -38,50 +53,196 @@ export default function ClientsPage() {
     return date.toLocaleDateString('bg-BG');
   };
 
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  let filteredClients = clients.filter(client =>
+    client.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.model.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Sort clients based on current sort field and order
+  filteredClients = [...filteredClients].sort((a, b) => {
+    let comparison = 0;
+
+    if (sortField === 'date') {
+      comparison = a.createdAt.seconds - b.createdAt.seconds;
+    } else if (sortField === 'name') {
+      comparison = a.ownerName.localeCompare(b.ownerName);
+    } else if (sortField === 'car') {
+      const carA = `${a.make} ${a.model}`;
+      const carB = `${b.make} ${b.model}`;
+      comparison = carA.localeCompare(carB);
+    }
+
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Клиенти</h1>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <input
+            type="text"
+            placeholder="Търси клиент..."
+            className="px-4 py-2 border border-gray-300 rounded-md w-full"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          <Link
+            href="/add-client"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 text-center"
+          >
+            Добави клиент
+          </Link>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : filteredClients.length > 0 ? (
+        <>
+          <div className="flex flex-wrap justify-between items-center mb-4">
+            <p className="text-gray-600 mb-2 sm:mb-0">
+              {filteredClients.length} {filteredClients.length === 1 ? 'клиент' : 'клиенти'} намерени
+              {searchTerm && ` за "${searchTerm}"`}
+            </p>
+
+            <div className="flex gap-2">
+              <div className="text-sm text-gray-600 self-center">Сортирай по:</div>
+              <button
+                onClick={() => toggleSort('date')}
+                className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                  sortField === 'date'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
                 Дата
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Собственик
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {sortField === 'date' && (
+                  <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </button>
+              <button
+                onClick={() => toggleSort('name')}
+                className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                  sortField === 'name'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Име
+                {sortField === 'name' && (
+                  <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </button>
+              <button
+                onClick={() => toggleSort('car')}
+                className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                  sortField === 'car'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
                 Автомобил
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Обем на двигателя
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {clients.map((client) => (
-              <tr key={client.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(client.createdAt)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {client.ownerName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {client.make} {client.model}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {client.engineSize}
-                </td>
-              </tr>
+                {sortField === 'car' && (
+                  <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredClients.map((client) => (
+              <div
+                key={client.id}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+              >
+                <div className="bg-blue-600 text-white py-3 px-4">
+                  <h3 className="font-semibold truncate">{client.ownerName}</h3>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start mb-3">
+                    <div className="bg-blue-100 rounded-full p-2 mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                        <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H11a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-6a1 1 0 00-.3-.7l-4-4A1 1 0 0015 2H3a1 1 0 00-1 1v1z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Автомобил</p>
+                      <p className="font-medium">{client.make} {client.model}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start mb-3">
+                    <div className="bg-blue-100 rounded-full p-2 mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V5z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Дата</p>
+                      <p className="font-medium">{formatDate(client.createdAt)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start mb-4">
+                    <div className="bg-blue-100 rounded-full p-2 mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Обем на двигателя</p>
+                      <p className="font-medium">{client.engineSize}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4 flex justify-between">
+                    <Link
+                      href={`/add-repair?clientId=${client.id}`}
+                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+                    >
+                      Нов ремонт
+                    </Link>
+                    <Link
+                      href={`/repairs?clientId=${client.id}`}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+                    >
+                      История
+                    </Link>
+                  </div>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </>
+      ) : (
+        <div className="bg-white rounded-lg shadow-md p-6 text-center">
+          <p className="text-gray-500">Няма намерени клиенти.</p>
+          {searchTerm && (
+            <button
+              className="mt-4 text-blue-600 hover:text-blue-800"
+              onClick={() => setSearchTerm('')}
+            >
+              Изчисти търсенето
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
