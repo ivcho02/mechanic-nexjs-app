@@ -6,5 +6,6 @@ export interface CarService {
   repairs: string;
   cost: number;
   ownerName: string;
+  additionalInfo?: string;
   createdAt: Date;
 }
