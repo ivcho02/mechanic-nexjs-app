@@ -9,6 +9,7 @@ export default function AddClientPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     ownerName: '',
+    phone: '',
     make: '',
     model: '',
     engineSize: '',
@@ -54,6 +55,22 @@ export default function AddClientPage() {
               value={formData.ownerName}
               onChange={handleChange}
               required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              Телефонен номер
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              placeholder="0888 123 456"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

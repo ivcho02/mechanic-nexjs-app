@@ -14,6 +14,7 @@ type RepairStatus = 'Изпратена оферта' | 'В процес' | 'З�
 interface Repair {
   id: string;
   ownerName: string;
+  phone: string;
   make: string;
   model: string;
   engineSize: string;
@@ -157,6 +158,7 @@ export default function RepairsPage() {
               body: [
                 [{ text: 'Информация за клиента', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
                 [{ text: `Име: ${repair.ownerName}` }],
+                ...(repair.phone ? [[{ text: `Телефон: ${repair.phone}` }]] : []),
                 [{ text: `Автомобил: ${repair.make} ${repair.model}` }],
                 [{ text: `Обем на двигателя: ${repair.engineSize}` }]
               ]

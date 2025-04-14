@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 interface Client {
   id: string;
   ownerName: string;
+  phone: string;
   make: string;
   model: string;
   engineSize: string;
@@ -30,6 +31,7 @@ export default function AddRepairPage() {
   const [selectedService, setSelectedService] = useState<string>('');
   const [formData, setFormData] = useState({
     ownerName: '',
+    phone: '',
     make: '',
     model: '',
     engineSize: '',
@@ -50,6 +52,7 @@ export default function AddRepairPage() {
     const clientsData = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ownerName: doc.data().ownerName,
+      phone: doc.data().phone || '',
       make: doc.data().make,
       model: doc.data().model,
       engineSize: doc.data().engineSize,
@@ -93,6 +96,7 @@ export default function AddRepairPage() {
           make: client.make,
           model: client.model,
           engineSize: client.engineSize,
+          phone: client.phone,
         }));
       }
     } else {
@@ -102,6 +106,7 @@ export default function AddRepairPage() {
         make: '',
         model: '',
         engineSize: '',
+        phone: '',
       }));
     }
   };
@@ -182,7 +187,7 @@ export default function AddRepairPage() {
               <option value="">Избери клиент</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
-                  {client.ownerName} - {client.make} {client.model} ({client.engineSize})
+                  {client.ownerName}{client.phone ? ` (${client.phone})` : ''} - {client.make} {client.model}
                 </option>
               ))}
             </select>
@@ -225,6 +230,21 @@ export default function AddRepairPage() {
               <option value="Завършен">Завършен</option>
               <option value="Отказан">Отказан</option>
             </select>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              Телефон на клиента
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="0888 123 456"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           <div className="space-y-2">
