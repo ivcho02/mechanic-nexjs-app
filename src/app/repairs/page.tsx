@@ -489,8 +489,19 @@ export default function RepairsPage() {
                         </div>
 
                         <div className="py-3">
-                          <h4 className="font-medium mb-1">Ремонти</h4>
-                          <p className="whitespace-pre-line">{repair.repairs}</p>
+                          <h4 className="font-medium mb-1">Услуги</h4>
+                          {repair.selectedServices && repair.selectedServices.length > 0 ? (
+                            <ul className="space-y-1">
+                              {repair.selectedServices.map((service, index) => (
+                                <li key={index} className="flex justify-between">
+                                  <span>{service.name}</span>
+                                  <span className="text-gray-600">{service.price.toFixed(2)} лв.</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="whitespace-pre-line">{repair.repairs}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -517,7 +528,7 @@ export default function RepairsPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Цена</p>
-                      <p className="font-medium">{repair.cost} лв.</p>
+                      <p className="text-lg font-semibold">{repair.cost.toFixed(2)} лв.</p>
                     </div>
                   </div>
 

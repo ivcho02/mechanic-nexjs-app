@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Client, Service, RepairData, RepairFormData } from '@/types';
+import { Client, Service, RepairData, RepairFormData, SelectedService } from '@/types';
 
 export default function RepairFormPage() {
   const router = useRouter();
@@ -27,6 +27,7 @@ export default function RepairFormPage() {
     engineSize: '',
     vin: '',
     repairs: '',
+    selectedServices: [],
     cost: '',
     additionalInfo: '',
     status: 'Изпратена оферта',
@@ -67,17 +68,6 @@ export default function RepairFormPage() {
     }
   }, [repairData, clients]);
 
-  // Set the matching service when services are loaded and we have repair data
-  useEffect(() => {
-    if (repairData && services.length > 0) {
-      // Try to find matching service
-      const serviceId = services.find(s => s.name === repairData.repairs)?.id;
-      if (serviceId) {
-        setSelectedService(serviceId);
-      }
-    }
-  }, [repairData, services]);
-
   // Effect to handle client selection from URL parameter (for new repairs)
   useEffect(() => {
     if (clientIdFromUrl && clients.length > 0 && !isEditMode) {
@@ -97,6 +87,24 @@ export default function RepairFormPage() {
     }
   }, [clientIdFromUrl, clients, isEditMode]);
 
+  // Calculate total cost when selectedServices changes
+  useEffect(() => {
+    if (formData.selectedServices.length > 0) {
+      const totalCost = formData.selectedServices.reduce((sum, service) => sum + service.price, 0);
+      setFormData(prev => ({
+        ...prev,
+        cost: totalCost.toString()
+      }));
+
+      // Update repairs field with list of service names
+      const serviceNames = formData.selectedServices.map(s => s.name).join('\n');
+      setFormData(prev => ({
+        ...prev,
+        repairs: serviceNames
+      }));
+    }
+  }, [formData.selectedServices]);
+
   const fetchRepair = async (repairId: string) => {
     setIsLoading(true);
     try {
@@ -104,6 +112,9 @@ export default function RepairFormPage() {
       if (repairDoc.exists()) {
         const data = repairDoc.data();
         setRepairData(data);
+
+        // If there's no selectedServices array (old format), create it from repairs and cost
+        const selectedServices = data.selectedServices || [];
 
         setFormData({
           ownerName: data.ownerName || '',
@@ -113,6 +124,7 @@ export default function RepairFormPage() {
           engineSize: data.engineSize || '',
           vin: data.vin || '',
           repairs: data.repairs || '',
+          selectedServices: selectedServices,
           cost: data.cost ? data.cost.toString() : '',
           additionalInfo: data.additionalInfo || '',
           status: data.status || 'Изпратена оферта',
@@ -150,7 +162,7 @@ export default function RepairFormPage() {
       }, []);
 
       setClients(uniqueClients);
-
+      console.log('Clients loaded:', uniqueClients.length);
       return uniqueClients;
     } catch (error) {
       console.error("Error fetching clients:", error);
@@ -169,7 +181,7 @@ export default function RepairFormPage() {
         description: doc.data().description,
       })) as Service[];
       setServices(servicesData);
-
+      console.log('Services loaded:', servicesData.length);
       return servicesData;
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -210,23 +222,65 @@ export default function RepairFormPage() {
   const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const serviceId = e.target.value;
     setSelectedService(serviceId);
+  };
 
-    if (serviceId) {
-      const service = services.find(s => s.id === serviceId);
-      if (service) {
-        setFormData(prev => ({
-          ...prev,
-          repairs: service.name,
-          cost: service.price.toString(),
-        }));
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        repairs: '',
-        cost: '',
-      }));
+  const addService = () => {
+    if (!selectedService) return;
+
+    const service = services.find(s => s.id === selectedService);
+    if (!service) return;
+
+    // Check if service is already added
+    if (formData.selectedServices.some(s => s.id === service.id)) {
+      return;
     }
+
+    // Add service to the list
+    const newSelectedService: SelectedService = {
+      id: service.id,
+      name: service.name,
+      price: service.price
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      selectedServices: [...prev.selectedServices, newSelectedService]
+    }));
+
+    // Reset selected service dropdown
+    setSelectedService('');
+  };
+
+  const removeService = (serviceId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.filter(s => s.id !== serviceId)
+    }));
+  };
+
+  const handleCustomService = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const customServiceName = (document.getElementById('customServiceName') as HTMLInputElement).value;
+    const customServicePrice = (document.getElementById('customServicePrice') as HTMLInputElement).value;
+
+    if (!customServiceName || !customServicePrice) return;
+
+    // Create a custom service
+    const newCustomService: SelectedService = {
+      id: `custom-${Date.now()}`,
+      name: customServiceName,
+      price: parseFloat(customServicePrice),
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      selectedServices: [...prev.selectedServices, newCustomService]
+    }));
+
+    // Clear form fields
+    (document.getElementById('customServiceName') as HTMLInputElement).value = '';
+    (document.getElementById('customServicePrice') as HTMLInputElement).value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -234,30 +288,33 @@ export default function RepairFormPage() {
     setIsLoading(true);
 
     try {
+      if (!selectedClient && !isEditMode) {
+        alert('Моля, изберете клиент');
+        setIsLoading(false);
+        return;
+      }
+
+      if (formData.selectedServices.length === 0) {
+        alert('Моля, добавете поне една услуга');
+        setIsLoading(false);
+        return;
+      }
+
+      const dataToSave = {
+        ...formData,
+        cost: parseFloat(formData.cost),
+      };
+
       if (isEditMode) {
         // Update existing repair
-        await updateDoc(doc(db, 'repairs', repairIdFromUrl), {
-          ...formData,
-          cost: parseFloat(formData.cost),
+        await updateDoc(doc(db, 'repairs', repairIdFromUrl!), {
+          ...dataToSave,
           updatedAt: serverTimestamp(),
         });
       } else {
         // Add new repair
-        if (!selectedClient) {
-          alert('Моля, изберете клиент');
-          setIsLoading(false);
-          return;
-        }
-
-        if (!selectedService) {
-          alert('Моля, изберете услуга');
-          setIsLoading(false);
-          return;
-        }
-
         await addDoc(collection(db, 'repairs'), {
-          ...formData,
-          cost: parseFloat(formData.cost),
+          ...dataToSave,
           createdAt: serverTimestamp(),
         });
       }
@@ -320,26 +377,6 @@ export default function RepairFormPage() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="service" className="block text-sm font-medium text-gray-700">
-              Избери услуга
-            </label>
-            <select
-              id="service"
-              value={selectedService}
-              onChange={handleServiceChange}
-              required={!isEditMode}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Избери услуга</option>
-              {services.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.name} - {service.price} лв.
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
             <label htmlFor="status" className="block text-sm font-medium text-gray-700">
               Статус
             </label>
@@ -388,39 +425,97 @@ export default function RepairFormPage() {
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="repairs" className="block text-sm font-medium text-gray-700">
-              Ремонти
-            </label>
-            <textarea
-              id="repairs"
-              name="repairs"
-              value={formData.repairs}
-              onChange={handleChange}
-              required
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="md:col-span-2 space-y-2 border-t border-gray-200 pt-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-medium text-gray-900">Услуги</h3>
+              <span className="text-sm text-gray-500">Общо: {parseFloat(formData.cost).toFixed(2)} лв.</span>
+            </div>
+
+            {/* Selected services list */}
+            {formData.selectedServices.length > 0 ? (
+              <div className="mb-4 bg-gray-50 rounded-md p-3">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Избрани услуги:</h4>
+                <ul className="divide-y divide-gray-200">
+                  {formData.selectedServices.map((service) => (
+                    <li key={service.id} className="py-2 flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{service.name}</span>
+                        <span className="ml-2 text-gray-600">{service.price.toFixed(2)} лв.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeService(service.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-md">
+                Няма избрани услуги. Моля, добавете поне една услуга.
+              </div>
+            )}
+
+            {/* Add service from list */}
+            <div className="flex space-x-2">
+              <select
+                id="service"
+                value={selectedService}
+                onChange={handleServiceChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Избери услуга</option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} - {service.price} лв.
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={addService}
+                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 flex-shrink-0"
+                disabled={!selectedService}
+              >
+                Добави
+              </button>
+            </div>
+
+            {/* Custom service form */}
+            <div className="mt-4 border-t border-gray-200 pt-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Добави ръчно услуга:</h4>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="text"
+                  id="customServiceName"
+                  placeholder="Име на услугата"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="number"
+                  id="customServicePrice"
+                  placeholder="Цена"
+                  step="0.01"
+                  min="0"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleCustomService}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Добави ръчно
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="cost" className="block text-sm font-medium text-gray-700">
-              Цена (лв.)
-            </label>
-            <input
-              type="number"
-              id="cost"
-              name="cost"
-              value={formData.cost}
-              onChange={handleChange}
-              required
-              min="0"
-              step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="space-y-2">
+          <div className="md:col-span-2 space-y-2">
             <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700">
               Допълнителна информация
             </label>

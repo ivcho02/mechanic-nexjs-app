@@ -37,6 +37,12 @@ export interface Service {
 
 export type RepairStatus = 'Изпратена оферта' | 'В процес' | 'Завършен' | 'Отказан';
 
+export interface SelectedService {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export interface RepairData {
   ownerName?: string;
   phone?: string;
@@ -45,6 +51,7 @@ export interface RepairData {
   engineSize?: string;
   vin?: string;
   repairs?: string;
+  selectedServices?: SelectedService[];
   cost?: number;
   additionalInfo?: string;
   status?: RepairStatus;
@@ -58,6 +65,7 @@ export interface RepairFormData {
   engineSize: string;
   vin: string;
   repairs: string;
+  selectedServices: SelectedService[];
   cost: string;
   additionalInfo: string;
   status: RepairStatus;
@@ -72,6 +80,7 @@ export interface Repair {
   engineSize: string;
   vin?: string;
   repairs: string;
+  selectedServices?: SelectedService[];
   cost: number;
   additionalInfo?: string;
   status: RepairStatus;
