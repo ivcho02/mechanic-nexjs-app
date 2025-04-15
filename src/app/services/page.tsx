@@ -57,7 +57,10 @@ export default function ServicesPage() {
     }));
   };
 
-  const formatDate = (timestamp: { seconds: number; nanoseconds: number }) => {
+  const formatDate = (timestamp?: { seconds: number; nanoseconds: number }) => {
+    if (!timestamp || timestamp.seconds === undefined) {
+      return 'Н/П'; // Return "Not Applicable" in Bulgarian if timestamp is undefined
+    }
     const date = new Date(timestamp.seconds * 1000);
     return date.toLocaleDateString('bg-BG');
   };
