@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import RepairForm from '@/components/RepairForm';
+import RepairForm from '@/components/forms/RepairForm';
 
 export default function RepairFormPage() {
   return (

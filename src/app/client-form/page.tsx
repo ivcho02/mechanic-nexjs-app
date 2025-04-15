@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import ClientForm from '@/components/ClientForm';
+import ClientForm from '@/components/forms/ClientForm';
 
 export default function ClientFormPage() {
   return (
