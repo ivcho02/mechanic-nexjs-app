@@ -378,8 +378,8 @@ export default function RepairsPage() {
           />
 
           <Link
-            href="/add-repair"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 text-center"
+            href="/repair-form"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
           >
             Добави ремонт
           </Link>

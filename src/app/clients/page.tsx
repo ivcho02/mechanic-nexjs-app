@@ -101,8 +101,8 @@ export default function ClientsPage() {
           />
 
           <Link
-            href="/add-client"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 text-center"
+            href="/client-form"
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 text-center"
           >
             Добави клиент
           </Link>
@@ -224,12 +224,12 @@ export default function ClientsPage() {
                     </div>
                   </div>
 
-                  <div className="border-t pt-4 flex justify-between">
+                  <div className="mt-4 border-t pt-4 flex justify-between">
                     <Link
-                      href={`/add-repair?clientId=${client.id}`}
-                      className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+                      className="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      href={`/repair-form?clientId=${client.id}`}
                     >
-                      Нов ремонт
+                      <span>Нов ремонт</span>
                     </Link>
                     <Link
                       href={`/repairs?clientId=${client.id}`}
@@ -244,15 +244,22 @@ export default function ClientsPage() {
           </div>
         </>
       ) : (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-500">Няма намерени клиенти.</p>
-          {searchTerm && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
+          <p className="text-gray-500 dark:text-gray-400">Няма намерени клиенти.</p>
+          {searchTerm ? (
             <button
-              className="mt-4 text-blue-600 hover:text-blue-800"
+              className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
               onClick={() => setSearchTerm('')}
             >
               Изчисти търсенето
             </button>
+          ) : (
+            <Link
+              href="/client-form"
+              className="mt-4 inline-block text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+            >
+              Добави нов клиент
+            </Link>
           )}
         </div>
       )}

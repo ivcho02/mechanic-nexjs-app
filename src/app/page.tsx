@@ -36,8 +36,8 @@ export default function Home() {
               Вижте клиентите
             </Link>
             <Link
-              href="/add-client"
-              className="bg-green-500 text-white py-2 px-6 rounded-md hover:bg-green-600"
+              href="/client-form"
+              className="p-4 bg-white rounded-lg shadow hover:shadow-md flex items-center space-x-4 border-l-4 border-blue-500"
             >
               Добавете клиент
             </Link>

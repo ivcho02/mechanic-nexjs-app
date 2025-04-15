@@ -6,7 +6,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getCarMakes, getCarModels, getCarEngines } from '@/lib/carData';
 
-export default function AddClientPage() {
+export default function ClientFormPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     ownerName: '',
@@ -248,22 +248,22 @@ export default function AddClientPage() {
               )}
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-          >
-            Отказ
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Запази
-          </button>
+          <div className="flex justify-end space-x-4 mt-4">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+            >
+              Отказ
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Добави клиент
+            </button>
+          </div>
         </div>
       </form>
     </div>

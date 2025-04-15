@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -23,8 +23,11 @@ interface Service {
 
 type RepairStatus = 'Изпратена оферта' | 'В процес' | 'Завършен' | 'Отказан';
 
-export default function AddRepairPage() {
+export default function RepairFormPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const clientIdFromUrl = searchParams.get('clientId');
+
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [selectedClient, setSelectedClient] = useState<string>('');
@@ -45,6 +48,24 @@ export default function AddRepairPage() {
     fetchClients();
     fetchServices();
   }, []);
+
+  // Effect to handle client selection from URL parameter
+  useEffect(() => {
+    if (clientIdFromUrl && clients.length > 0) {
+      setSelectedClient(clientIdFromUrl);
+      const client = clients.find(c => c.id === clientIdFromUrl);
+      if (client) {
+        setFormData(prev => ({
+          ...prev,
+          ownerName: client.ownerName,
+          make: client.make,
+          model: client.model,
+          engineSize: client.engineSize,
+          phone: client.phone,
+        }));
+      }
+    }
+  }, [clientIdFromUrl, clients]);
 
   const fetchClients = async () => {
     const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
@@ -169,25 +190,32 @@ export default function AddRepairPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Добавяне на нов ремонт</h1>
+      <h1 className="text-3xl font-bold mb-6">Формуляр за ремонт</h1>
 
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow">
-        <div className="grid grid-cols-1 gap-6">
-          <div className="space-y-2">
-            <label htmlFor="client" className="block text-sm font-medium text-gray-700">
-              Избери клиент
+      {clientIdFromUrl && selectedClient && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-blue-800">Клиентът е предварително избран от предишната страница.</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Клиент
             </label>
             <select
-              id="client"
+              className={`mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md ${
+                clientIdFromUrl ? 'border-blue-500 bg-blue-50' : ''
+              }`}
               value={selectedClient}
               onChange={handleClientChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Избери клиент</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
-                  {client.ownerName}{client.phone ? ` (${client.phone})` : ''} - {client.make} {client.model}
+                  {client.ownerName} - {client.make} {client.model}
                 </option>
               ))}
             </select>
