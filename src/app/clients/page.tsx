@@ -4,19 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-
-interface Client {
-  id: string;
-  ownerName: string;
-  phone: string;
-  make: string;
-  model: string;
-  engineSize: string;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
-}
+import { Client } from '@/types';
 
 type SortField = 'date' | 'name' | 'car';
 type SortOrder = 'asc' | 'desc';

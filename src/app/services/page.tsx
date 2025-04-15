@@ -3,17 +3,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-interface Service {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
-}
+import { Service } from '@/types';
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);

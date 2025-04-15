@@ -1,0 +1,42 @@
+{
+  "mainMenu": [
+    {
+      "id": "dashboard",
+      "text": "Начало",
+      "url": "/",
+      "icon": "home"
+    },
+    {
+      "id": "clients",
+      "text": "Клиенти",
+      "url": "/clients",
+      "icon": "users"
+    },
+    {
+      "id": "repairs",
+      "text": "Ремонти",
+      "url": "/repairs",
+      "icon": "wrench"
+    },
+    {
+      "id": "services",
+      "text": "Услуги",
+      "url": "/services",
+      "icon": "cog"
+    }
+  ],
+  "secondaryMenu": [
+    {
+      "id": "new-client",
+      "text": "Добави клиент",
+      "url": "/client-form",
+      "icon": "user-plus"
+    },
+    {
+      "id": "new-repair",
+      "text": "Нов ремонт",
+      "url": "/repair-form",
+      "icon": "plus-circle"
+    }
+  ]
+}

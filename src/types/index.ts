@@ -1,3 +1,9 @@
+// Common timestamp type
+export interface Timestamp {
+  seconds: number;
+  nanoseconds: number;
+}
+
 export interface CarService {
   id: string;
   make: string;
@@ -8,4 +14,92 @@ export interface CarService {
   ownerName: string;
   additionalInfo?: string;
   createdAt: Date;
+}
+
+export interface Client {
+  id: string;
+  ownerName: string;
+  phone: string;
+  make: string;
+  model: string;
+  engineSize: string;
+  createdAt?: Timestamp;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  createdAt?: Timestamp;
+}
+
+export type RepairStatus = 'Изпратена оферта' | 'В процес' | 'Завършен' | 'Отказан';
+
+export interface RepairData {
+  ownerName?: string;
+  phone?: string;
+  make?: string;
+  model?: string;
+  engineSize?: string;
+  repairs?: string;
+  cost?: number;
+  additionalInfo?: string;
+  status?: RepairStatus;
+}
+
+export interface RepairFormData {
+  ownerName: string;
+  phone: string;
+  make: string;
+  model: string;
+  engineSize: string;
+  repairs: string;
+  cost: string;
+  additionalInfo: string;
+  status: RepairStatus;
+}
+
+// From repairs/page.tsx
+export interface Repair {
+  id: string;
+  ownerName: string;
+  make: string;
+  model: string;
+  engineSize: string;
+  repairs: string;
+  cost: number;
+  additionalInfo?: string;
+  status: RepairStatus;
+  createdAt: Timestamp;
+  phone?: string;
+}
+
+// Sorting types
+export type SortField = 'date' | 'name' | 'car' | 'status' | 'cost';
+export type SortOrder = 'asc' | 'desc';
+
+// From lib/carData.ts
+export interface CarMake {
+  id: string;
+  name: string;
+}
+
+export interface CarModel {
+  id: string;
+  makeId: string;
+  name: string;
+}
+
+// Navigation menu types
+export interface MenuItem {
+  id: string;
+  text: string;
+  url: string;
+  icon: string;
+}
+
+export interface NavigationMenu {
+  mainMenu: MenuItem[];
+  secondaryMenu: MenuItem[];
 }

@@ -2,37 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-interface Client {
-  id: string;
-  ownerName: string;
-  phone: string;
-  make: string;
-  model: string;
-  engineSize: string;
-}
-
-interface Service {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-}
-
-type RepairStatus = 'Изпратена оферта' | 'В процес' | 'Завършен' | 'Отказан';
+import { Client, Service, RepairData, RepairFormData } from '@/types';
 
 export default function RepairFormPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clientIdFromUrl = searchParams.get('clientId');
+  const repairIdFromUrl = searchParams.get('id');
+  const isEditMode = !!repairIdFromUrl;
 
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [selectedService, setSelectedService] = useState<string>('');
-  const [formData, setFormData] = useState({
+  const [isLoading, setIsLoading] = useState(false);
+  const [repairData, setRepairData] = useState<RepairData | null>(null);
+  const [formData, setFormData] = useState<RepairFormData>({
     ownerName: '',
     phone: '',
     make: '',
@@ -41,17 +28,59 @@ export default function RepairFormPage() {
     repairs: '',
     cost: '',
     additionalInfo: '',
-    status: 'Изпратена оферта' as RepairStatus,
+    status: 'Изпратена оферта',
   });
 
+  // First load clients and services
   useEffect(() => {
-    fetchClients();
-    fetchServices();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchClients(), fetchServices()]);
+      setIsLoading(false);
+    };
+
+    loadData();
   }, []);
 
-  // Effect to handle client selection from URL parameter
+  // Then fetch repair data if in edit mode
   useEffect(() => {
-    if (clientIdFromUrl && clients.length > 0) {
+    if (repairIdFromUrl) {
+      fetchRepair(repairIdFromUrl);
+    }
+  }, [repairIdFromUrl]);
+
+  // Set the matching client when clients are loaded and we have repair data
+  useEffect(() => {
+    if (repairData && clients.length > 0) {
+      // Find client and set as selected
+      const clientId = clients.find(c =>
+        c.ownerName === repairData.ownerName &&
+        c.make === repairData.make &&
+        c.model === repairData.model
+      )?.id;
+
+      if (clientId) {
+        console.log('Found matching client:', clientId);
+        setSelectedClient(clientId);
+      }
+    }
+  }, [repairData, clients]);
+
+  // Set the matching service when services are loaded and we have repair data
+  useEffect(() => {
+    if (repairData && services.length > 0) {
+      // Try to find matching service
+      const serviceId = services.find(s => s.name === repairData.repairs)?.id;
+      if (serviceId) {
+        console.log('Found matching service:', serviceId);
+        setSelectedService(serviceId);
+      }
+    }
+  }, [repairData, services]);
+
+  // Effect to handle client selection from URL parameter (for new repairs)
+  useEffect(() => {
+    if (clientIdFromUrl && clients.length > 0 && !isEditMode) {
       setSelectedClient(clientIdFromUrl);
       const client = clients.find(c => c.id === clientIdFromUrl);
       if (client) {
@@ -65,43 +94,84 @@ export default function RepairFormPage() {
         }));
       }
     }
-  }, [clientIdFromUrl, clients]);
+  }, [clientIdFromUrl, clients, isEditMode]);
+
+  const fetchRepair = async (repairId: string) => {
+    setIsLoading(true);
+    try {
+      const repairDoc = await getDoc(doc(db, 'repairs', repairId));
+      if (repairDoc.exists()) {
+        const data = repairDoc.data();
+        setRepairData(data);
+
+        setFormData({
+          ownerName: data.ownerName || '',
+          phone: data.phone || '',
+          make: data.make || '',
+          model: data.model || '',
+          engineSize: data.engineSize || '',
+          repairs: data.repairs || '',
+          cost: data.cost ? data.cost.toString() : '',
+          additionalInfo: data.additionalInfo || '',
+          status: data.status || 'Изпратена оферта',
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching repair:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchClients = async () => {
-    const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    const clientsData = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ownerName: doc.data().ownerName,
-      phone: doc.data().phone || '',
-      make: doc.data().make,
-      model: doc.data().model,
-      engineSize: doc.data().engineSize,
-    }));
+    try {
+      const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const clientsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ownerName: doc.data().ownerName,
+        phone: doc.data().phone || '',
+        make: doc.data().make,
+        model: doc.data().model,
+        engineSize: doc.data().engineSize,
+      }));
 
-    // Remove duplicates based on ownerName
-    const uniqueClients = clientsData.reduce((acc: Client[], current) => {
-      const x = acc.find(item => item.ownerName === current.ownerName);
-      if (!x) {
-        return acc.concat([current]);
-      } else {
-        return acc;
-      }
-    }, []);
+      // Remove duplicates based on ownerName
+      const uniqueClients = clientsData.reduce((acc: Client[], current) => {
+        const x = acc.find(item => item.ownerName === current.ownerName);
+        if (!x) {
+          return acc.concat([current]);
+        } else {
+          return acc;
+        }
+      }, []);
 
-    setClients(uniqueClients);
+      setClients(uniqueClients);
+      console.log('Clients loaded:', uniqueClients.length);
+      return uniqueClients;
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      return [];
+    }
   };
 
   const fetchServices = async () => {
-    const q = query(collection(db, 'services'), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    const servicesData = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-      price: doc.data().price,
-      description: doc.data().description,
-    })) as Service[];
-    setServices(servicesData);
+    try {
+      const q = query(collection(db, 'services'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const servicesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name,
+        price: doc.data().price,
+        description: doc.data().description,
+      })) as Service[];
+      setServices(servicesData);
+      console.log('Services loaded:', servicesData.length);
+      return servicesData;
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      return [];
+    }
   };
 
   const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -156,27 +226,43 @@ export default function RepairFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedClient) {
-      alert('Моля, изберете клиент');
-      return;
-    }
-
-    if (!selectedService) {
-      alert('Моля, изберете услуга');
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      await addDoc(collection(db, 'repairs'), {
-        ...formData,
-        cost: parseFloat(formData.cost),
-        createdAt: serverTimestamp(),
-      });
+      if (isEditMode) {
+        // Update existing repair
+        await updateDoc(doc(db, 'repairs', repairIdFromUrl), {
+          ...formData,
+          cost: parseFloat(formData.cost),
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        // Add new repair
+        if (!selectedClient) {
+          alert('Моля, изберете клиент');
+          setIsLoading(false);
+          return;
+        }
+
+        if (!selectedService) {
+          alert('Моля, изберете услуга');
+          setIsLoading(false);
+          return;
+        }
+
+        await addDoc(collection(db, 'repairs'), {
+          ...formData,
+          cost: parseFloat(formData.cost),
+          createdAt: serverTimestamp(),
+        });
+      }
 
       router.push('/repairs');
     } catch (error) {
-      console.error('Error adding repair:', error);
+      console.error('Error saving repair:', error);
+      alert('Грешка при запис на ремонта. Моля опитайте отново.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -190,9 +276,15 @@ export default function RepairFormPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Формуляр за ремонт</h1>
+      <h1 className="text-3xl font-bold mb-6">{isEditMode ? 'Редактиране на ремонт' : 'Нов ремонт'}</h1>
 
-      {clientIdFromUrl && selectedClient && (
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25 z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+
+      {clientIdFromUrl && selectedClient && !isEditMode && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-blue-800">Клиентът е предварително избран от предишната страница.</p>
         </div>
@@ -210,7 +302,8 @@ export default function RepairFormPage() {
               }`}
               value={selectedClient}
               onChange={handleClientChange}
-              required
+              required={!isEditMode}
+              disabled={isEditMode}
             >
               <option value="">Избери клиент</option>
               {clients.map((client) => (
@@ -229,7 +322,7 @@ export default function RepairFormPage() {
               id="service"
               value={selectedService}
               onChange={handleServiceChange}
-              required
+              required={!isEditMode}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Избери услуга</option>
@@ -327,14 +420,16 @@ export default function RepairFormPage() {
             type="button"
             onClick={() => router.back()}
             className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            disabled={isLoading}
           >
             Отказ
           </button>
           <button
             type="submit"
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            disabled={isLoading}
           >
-            Запази
+            {isLoading ? 'Запазване...' : 'Запази'}
           </button>
         </div>
       </form>

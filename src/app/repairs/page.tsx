@@ -1,35 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { Repair, RepairStatus, SortField, SortOrder, Timestamp } from '@/types';
 
 // Define a type for the PDF generator
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PDFMakeType = any;
-
-type RepairStatus = 'Изпратена оферта' | 'В процес' | 'Завършен' | 'Отказан';
-
-interface Repair {
-  id: string;
-  ownerName: string;
-  phone: string;
-  make: string;
-  model: string;
-  engineSize: string;
-  repairs: string;
-  cost: number;
-  additionalInfo: string;
-  status: RepairStatus;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
-}
-
-type SortField = 'date' | 'name' | 'car' | 'status' | 'cost';
-type SortOrder = 'asc' | 'desc';
 
 export default function RepairsPage() {
   const [repairs, setRepairs] = useState<Repair[]>([]);
@@ -103,7 +82,7 @@ export default function RepairsPage() {
     }
   };
 
-  const formatDate = (timestamp: { seconds: number; nanoseconds: number }) => {
+  const formatDate = (timestamp: Timestamp) => {
     const date = new Date(timestamp.seconds * 1000);
     return date.toLocaleDateString('bg-BG');
   };
@@ -535,7 +514,7 @@ export default function RepairsPage() {
                   <div className="border-t pt-4 flex flex-col gap-3">
                     <div className="flex justify-between">
                       <Link
-                        href={`/edit-repair?id=${repair.id}`}
+                        href={`/repair-form?id=${repair.id}`}
                         className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
                       >
                         Редактирай
