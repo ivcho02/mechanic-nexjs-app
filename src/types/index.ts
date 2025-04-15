@@ -41,6 +41,7 @@ export interface SelectedService {
   id: string;
   name: string;
   price: number;
+  description?: string;
 }
 
 export interface RepairData {
