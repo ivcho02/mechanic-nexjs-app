@@ -470,7 +470,29 @@ export default function RepairsPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Автомобил</p>
-                      <p className="font-medium">{repair.make} {repair.model} ({repair.engineSize})</p>
+                      <div className="divide-y divide-gray-200">
+                        <div className="py-3 flex justify-between items-center">
+                          <div className="flex items-center">
+                            <span className="font-semibold">{repair.make} {repair.model}</span>
+                            <span className="ml-2 text-sm text-gray-500">({repair.engineSize})</span>
+                          </div>
+                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(repair.status)}`}>
+                            {repair.status}
+                          </span>
+                        </div>
+
+                        <div className="py-3">
+                          <h4 className="font-medium mb-1">Клиент</h4>
+                          <p>{repair.ownerName}</p>
+                          {repair.phone && <p className="text-sm text-gray-600">Тел: {repair.phone}</p>}
+                          {repair.vin && <p className="text-sm text-gray-600">VIN: {repair.vin}</p>}
+                        </div>
+
+                        <div className="py-3">
+                          <h4 className="font-medium mb-1">Ремонти</h4>
+                          <p className="whitespace-pre-line">{repair.repairs}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -483,18 +505,6 @@ export default function RepairsPage() {
                     <div>
                       <p className="text-sm text-gray-600">Дата</p>
                       <p className="font-medium">{formatDate(repair.createdAt)}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start mb-3">
-                    <div className="bg-blue-100 rounded-full p-2 mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Ремонти</p>
-                      <p className="font-medium line-clamp-2">{repair.repairs}</p>
                     </div>
                   </div>
 

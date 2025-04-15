@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { Client } from '@/types';
+import { Client, Timestamp } from '@/types';
 
 type SortField = 'date' | 'name' | 'car';
 type SortOrder = 'asc' | 'desc';
@@ -37,7 +37,28 @@ export default function ClientsPage() {
     }
   };
 
-  const formatDate = (timestamp: { seconds: number; nanoseconds: number }) => {
+  const sortClients = (a: Client, b: Client, field: SortField, order: SortOrder) => {
+    const multiplier = order === 'asc' ? 1 : -1;
+
+    switch (field) {
+      case 'date':
+        if (!a.createdAt && !b.createdAt) return 0;
+        if (!a.createdAt) return 1 * multiplier;
+        if (!b.createdAt) return -1 * multiplier;
+        return (b.createdAt.seconds - a.createdAt.seconds) * multiplier;
+      case 'name':
+        return a.ownerName.localeCompare(b.ownerName) * multiplier;
+      case 'car':
+        const aCar = `${a.make} ${a.model}`;
+        const bCar = `${b.make} ${b.model}`;
+        return aCar.localeCompare(bCar) * multiplier;
+      default:
+        return 0;
+    }
+  };
+
+  const formatDate = (timestamp: Timestamp | undefined) => {
+    if (!timestamp) return 'Неизвестна дата';
     const date = new Date(timestamp.seconds * 1000);
     return date.toLocaleDateString('bg-BG');
   };
@@ -58,21 +79,7 @@ export default function ClientsPage() {
   );
 
   // Sort clients based on current sort field and order
-  filteredClients = [...filteredClients].sort((a, b) => {
-    let comparison = 0;
-
-    if (sortField === 'date') {
-      comparison = a.createdAt.seconds - b.createdAt.seconds;
-    } else if (sortField === 'name') {
-      comparison = a.ownerName.localeCompare(b.ownerName);
-    } else if (sortField === 'car') {
-      const carA = `${a.make} ${a.model}`;
-      const carB = `${b.make} ${b.model}`;
-      comparison = carA.localeCompare(carB);
-    }
-
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
+  filteredClients = [...filteredClients].sort((a, b) => sortClients(a, b, sortField, sortOrder));
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -176,6 +183,20 @@ export default function ClientsPage() {
                     </div>
                   </div>
 
+                  {client.vin && (
+                    <div className="flex items-start mb-3">
+                      <div className="bg-blue-100 rounded-full p-2 mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">VIN номер</p>
+                        <p className="font-medium">{client.vin}</p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-start mb-3">
                     <div className="bg-blue-100 rounded-full p-2 mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
@@ -219,12 +240,20 @@ export default function ClientsPage() {
                     >
                       <span>Нов ремонт</span>
                     </Link>
-                    <Link
-                      href={`/repairs?clientId=${client.id}`}
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-                    >
-                      История
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/client-form?id=${client.id}`}
+                        className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+                      >
+                        Редактирай
+                      </Link>
+                      <Link
+                        href={`/repairs?clientId=${client.id}`}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+                      >
+                        История
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -25,6 +25,7 @@ export default function RepairFormPage() {
     make: '',
     model: '',
     engineSize: '',
+    vin: '',
     repairs: '',
     cost: '',
     additionalInfo: '',
@@ -72,7 +73,6 @@ export default function RepairFormPage() {
       // Try to find matching service
       const serviceId = services.find(s => s.name === repairData.repairs)?.id;
       if (serviceId) {
-        console.log('Found matching service:', serviceId);
         setSelectedService(serviceId);
       }
     }
@@ -91,6 +91,7 @@ export default function RepairFormPage() {
           model: client.model,
           engineSize: client.engineSize,
           phone: client.phone,
+          vin: client.vin || '',
         }));
       }
     }
@@ -110,6 +111,7 @@ export default function RepairFormPage() {
           make: data.make || '',
           model: data.model || '',
           engineSize: data.engineSize || '',
+          vin: data.vin || '',
           repairs: data.repairs || '',
           cost: data.cost ? data.cost.toString() : '',
           additionalInfo: data.additionalInfo || '',
@@ -134,6 +136,7 @@ export default function RepairFormPage() {
         make: doc.data().make,
         model: doc.data().model,
         engineSize: doc.data().engineSize,
+        vin: doc.data().vin || '',
       }));
 
       // Remove duplicates based on ownerName
@@ -147,7 +150,7 @@ export default function RepairFormPage() {
       }, []);
 
       setClients(uniqueClients);
-      console.log('Clients loaded:', uniqueClients.length);
+
       return uniqueClients;
     } catch (error) {
       console.error("Error fetching clients:", error);
@@ -166,7 +169,7 @@ export default function RepairFormPage() {
         description: doc.data().description,
       })) as Service[];
       setServices(servicesData);
-      console.log('Services loaded:', servicesData.length);
+
       return servicesData;
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -188,6 +191,7 @@ export default function RepairFormPage() {
           model: client.model,
           engineSize: client.engineSize,
           phone: client.phone,
+          vin: client.vin || '',
         }));
       }
     } else {
@@ -198,6 +202,7 @@ export default function RepairFormPage() {
         model: '',
         engineSize: '',
         phone: '',
+        vin: '',
       }));
     }
   };
@@ -364,6 +369,21 @@ export default function RepairFormPage() {
               value={formData.phone}
               onChange={handleChange}
               placeholder="0888 123 456"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
+              VIN номер
+            </label>
+            <input
+              type="text"
+              id="vin"
+              name="vin"
+              value={formData.vin}
+              onChange={handleChange}
+              placeholder="WVWZZZ1JZ3W386752"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

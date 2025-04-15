@@ -23,6 +23,7 @@ export interface Client {
   make: string;
   model: string;
   engineSize: string;
+  vin?: string;
   createdAt?: Timestamp;
 }
 
@@ -42,6 +43,7 @@ export interface RepairData {
   make?: string;
   model?: string;
   engineSize?: string;
+  vin?: string;
   repairs?: string;
   cost?: number;
   additionalInfo?: string;
@@ -54,6 +56,7 @@ export interface RepairFormData {
   make: string;
   model: string;
   engineSize: string;
+  vin: string;
   repairs: string;
   cost: string;
   additionalInfo: string;
@@ -67,6 +70,7 @@ export interface Repair {
   make: string;
   model: string;
   engineSize: string;
+  vin?: string;
   repairs: string;
   cost: number;
   additionalInfo?: string;
