@@ -455,9 +455,6 @@ export default function RepairsPage() {
               >
                 <div className="bg-blue-600 text-white py-3 px-4 flex justify-between items-center">
                   <h3 className="font-semibold truncate">{repair.ownerName}</h3>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(repair.status)}`}>
-                    {repair.status}
-                  </span>
                 </div>
 
                 <div className="p-4">
