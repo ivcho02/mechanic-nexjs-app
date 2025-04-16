@@ -103,22 +103,29 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
     setLoading(prev => ({ ...prev, models: true }));
     // Simulate a slight delay for better UI feedback
     setTimeout(() => {
-      const models = getCarModels(formData.make);
-      setCarModels(models);
+      try {
+        const models = getCarModels(formData.make);
+        setCarModels(models);
 
-      // Only reset model and engine size when make changes if not in edit mode
-      // or if the models list doesn't include the current model
-      if (!isEditMode || !models.includes(formData.model)) {
-        setFormData(prev => ({
-          ...prev,
-          model: '',
-          engineSize: ''
-        }));
+        // Only reset model and engine size when make changes if not in edit mode
+        // or if the models list doesn't include the current model
+        if (!isEditMode || !models.includes(formData.model)) {
+          setFormData(prev => ({
+            ...prev,
+            model: '',
+            engineSize: ''
+          }));
+        } else {
+          console.log(`Keeping current model: ${formData.model}`);
+        }
+      } catch (error) {
+        console.error('Error fetching car models:', error);
+        setCarModels([]);
+      } finally {
+        setLoading(prev => ({ ...prev, models: false }));
       }
-
-      setLoading(prev => ({ ...prev, models: false }));
     }, 300);
-  }, [formData.make, isEditMode, formData.model]);
+  }, [formData.make, isEditMode]);
 
   // Get engine sizes when model changes
   useEffect(() => {
@@ -130,30 +137,37 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
     setLoading(prev => ({ ...prev, details: true }));
     // Simulate a slight delay for better UI feedback
     setTimeout(() => {
-      const sizes = getCarEngines(formData.make, formData.model);
-      setEngineSizes(sizes);
+      try {
+        const sizes = getCarEngines(formData.make, formData.model);
+        setEngineSizes(sizes);
 
-      // Only auto-select or reset engine size if not in edit mode
-      // or if the sizes list doesn't include the current engine size
-      if (!isEditMode || !sizes.includes(formData.engineSize)) {
-        if (sizes.length === 1) {
-          // If only one engine size is available, select it automatically
-          setFormData(prev => ({
-            ...prev,
-            engineSize: sizes[0]
-          }));
+        // Only auto-select or reset engine size if not in edit mode
+        // or if the sizes list doesn't include the current engine size
+        if (!isEditMode || !sizes.includes(formData.engineSize)) {
+          if (sizes.length === 1) {
+            // If only one engine size is available, select it automatically
+            setFormData(prev => ({
+              ...prev,
+              engineSize: sizes[0]
+            }));
+          } else {
+            // Reset engine size when model changes and multiple options exist
+            setFormData(prev => ({
+              ...prev,
+              engineSize: ''
+            }));
+          }
         } else {
-          // Reset engine size when model changes and multiple options exist
-          setFormData(prev => ({
-            ...prev,
-            engineSize: ''
-          }));
+          console.log(`Keeping current engine size: ${formData.engineSize}`);
         }
+      } catch (error) {
+        console.error('Error fetching engine sizes:', error);
+        setEngineSizes([]);
+      } finally {
+        setLoading(prev => ({ ...prev, details: false }));
       }
-
-      setLoading(prev => ({ ...prev, details: false }));
     }, 300);
-  }, [formData.make, formData.model, isEditMode, formData.engineSize]);
+  }, [formData.make, formData.model, isEditMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

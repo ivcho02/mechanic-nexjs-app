@@ -36,6 +36,8 @@ export type Dictionary = {
     newRepair: string;
     edit: string;
     viewRepairs: string;
+    delete: string;
+    deleteConfirm: string;
     noSearchResults: string;
     noClients: string;
     tryDifferentSearch: string;

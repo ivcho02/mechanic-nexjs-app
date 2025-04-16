@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Client, Timestamp } from '@/types';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
-import { fetchClients } from '@/helpers/firebaseHelpers';
+import { fetchClients, deleteClient } from '@/helpers/firebaseHelpers';
 
 type SortField = 'date' | 'name' | 'car';
 type SortOrder = 'asc' | 'desc';
@@ -21,6 +21,10 @@ export default function ClientsPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [dict, setDict] = useState<Dictionary | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
+  const [openActionsMenu, setOpenActionsMenu] = useState<string | null>(null);
+  const dropdownRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
     const loadDictionary = async () => {
@@ -33,6 +37,22 @@ export default function ClientsPage() {
     loadClients();
   }, [lang]);
 
+  // Modified click outside handler to work with multiple dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openActionsMenu &&
+          dropdownRefs.current[openActionsMenu] &&
+          !dropdownRefs.current[openActionsMenu]?.contains(event.target as Node)) {
+        setOpenActionsMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openActionsMenu]);
+
   const loadClients = async () => {
     setIsLoading(true);
     try {
@@ -43,6 +63,39 @@ export default function ClientsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteClient = async (clientId: string) => {
+    // Show confirmation before deleting
+    setClientToDelete(clientId);
+    setOpenActionsMenu(null); // Close the actions menu
+  };
+
+  const confirmDelete = async () => {
+    if (!clientToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteClient(clientToDelete);
+      // Remove client from local state
+      setClients(clients.filter(client => client.id !== clientToDelete));
+      // Reset delete state
+      setClientToDelete(null);
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      alert("Error deleting client. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setClientToDelete(null);
+  };
+
+  const toggleActionsMenu = (event: React.MouseEvent, clientId: string) => {
+    event.stopPropagation(); // Prevent the click from closing the menu immediately
+    setOpenActionsMenu(prev => prev === clientId ? null : clientId);
   };
 
   const sortClients = (a: Client, b: Client, field: SortField, order: SortOrder) => {
@@ -114,6 +167,39 @@ export default function ClientsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Delete confirmation modal */}
+      {clientToDelete && dict && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">{dict.clients.deleteConfirm}</h3>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md font-medium"
+                disabled={isDeleting}
+              >
+                {dict.clientForm.cancel}
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {dict.clientForm.loading}
+                  </span>
+                ) : dict.clients.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">{clientsTitle}</h1>
 
@@ -197,9 +283,70 @@ export default function ClientsPage() {
                 key={client.id}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
               >
-                <div className="bg-blue-600 text-white py-3 px-4">
+                {/* Client card header with title and actions button */}
+                <div className="bg-blue-600 text-white py-3 px-4 flex justify-between items-center">
                   <h3 className="font-semibold truncate">{client.ownerName}</h3>
+
+                  {/* Actions Menu Button - Moved to header */}
+                  <div
+                    className="relative"
+                    ref={(el) => { dropdownRefs.current[client.id] = el; }}
+                  >
+                    <button
+                      onClick={(e) => toggleActionsMenu(e, client.id)}
+                      className="bg-white text-blue-700 px-2 py-1 rounded-md text-sm font-medium transition-colors duration-200 flex items-center hover:bg-blue-50"
+                    >
+                      <span className="mr-1">{dict.nav.actions}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {openActionsMenu === client.id && (
+                      <div
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border origin-top-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="py-1">
+                          <Link
+                            href={`/${lang}/client-form?id=${client.id}`}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                            {edit}
+                          </Link>
+                          <Link
+                            href={`/${lang}/repairs?clientId=${client.id}`}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                            </svg>
+                            {viewRepairs}
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClient(client.id);
+                            }}
+                            className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            {dict.clients.delete}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
                 <div className="p-4">
                   <div className="flex items-start mb-3">
                     <div className="bg-blue-100 rounded-full p-2 mr-3">
@@ -264,27 +411,15 @@ export default function ClientsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 border-t pt-4 flex justify-between">
+                  {/* Actions section - Keep only the New Repair button */}
+                  <div className="mt-4 border-t pt-4 flex justify-center">
+                    {/* Primary Action */}
                     <Link
-                      className="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      className="flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 w-full"
                       href={`/${lang}/repair-form?clientId=${client.id}`}
                     >
                       <span>{newRepair}</span>
                     </Link>
-                    <div className="flex gap-2">
-                      <Link
-                        href={`/${lang}/client-form?id=${client.id}`}
-                        className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-                      >
-                        {edit}
-                      </Link>
-                      <Link
-                        href={`/${lang}/repairs?clientId=${client.id}`}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
-                      >
-                        {viewRepairs}
-                      </Link>
-                    </div>
                   </div>
                 </div>
               </div>

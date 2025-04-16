@@ -1,4 +1,4 @@
-import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Repair, RepairStatus, Client, Service } from '@/types';
 
@@ -102,6 +102,19 @@ export const cancelRepair = async (repairId: string): Promise<void> => {
     });
   } catch (error) {
     console.error('Error cancelling repair:', error);
+    throw error;
+  }
+};
+
+/**
+ * Deletes a client by ID
+ */
+export const deleteClient = async (clientId: string): Promise<void> => {
+  try {
+    const clientRef = doc(db, 'clients', clientId);
+    await deleteDoc(clientRef);
+  } catch (error) {
+    console.error('Error deleting client:', error);
     throw error;
   }
 };
