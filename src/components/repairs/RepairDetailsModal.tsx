@@ -1,5 +1,6 @@
 import { Repair } from '@/types';
-import { formatDate, getNextStatus } from '@/helpers/repairHelpers';
+import { getNextStatus } from '@/helpers/repairHelpers';
+import { Dictionary } from '@/dictionaries/client';
 
 interface RepairDetailsModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface RepairDetailsModalProps {
   pdfLoading: boolean;
   pdfMakeAvailable: boolean;
   lang: string;
-  dict: any; // Using any for simplicity, ideally this would be properly typed
+  dict: Dictionary;
 }
 
 export default function RepairDetailsModal({
