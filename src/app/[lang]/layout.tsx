@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { locales, defaultLocale } from '@/middleware';
 import NavBar from '@/components/navigation/NavBar';
 import '../globals.css';
+import { AuthProvider } from '@/lib/authContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -29,14 +30,16 @@ export default function RootLayout({
   return (
     <html lang={lang}>
       <body className={inter.className}>
-        <div className="flex min-h-screen">
-          <NavBar />
-          <main className="flex-1 md:ml-64 overflow-y-auto">
-            <div className="px-6 py-8">
-              {children}
-            </div>
-          </main>
-        </div>
+        <AuthProvider>
+          <div className="flex min-h-screen">
+            <NavBar />
+            <main className="flex-1 md:ml-64 overflow-y-auto">
+              <div className="px-6 py-8">
+                {children}
+              </div>
+            </main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

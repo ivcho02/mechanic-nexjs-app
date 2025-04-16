@@ -15,7 +15,13 @@
     "addClient": "Add Client",
     "addRepair": "Add Repair",
     "mainMenu": "Main Menu",
-    "actions": "Quick Actions"
+    "actions": "Quick Actions",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "myRepairs": "My Repairs",
+    "adminPanel": "Mechanic Management",
+    "profile": "My Profile"
   },
   "clients": {
     "title": "Clients",
@@ -121,5 +127,19 @@
     "noServices": "No services found",
     "servicesList": "Services List",
     "notAvailable": "N/A"
+  },
+  "auth": {
+    "login": "Sign in to your account",
+    "register": "Create an account",
+    "email": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "signIn": "Sign in",
+    "registerButton": "Register",
+    "registerPrompt": "Don't have an account? Register",
+    "loginPrompt": "Already have an account? Sign in",
+    "passwordsDontMatch": "Passwords do not match",
+    "logoutSuccess": "Successfully logged out",
+    "loginRequired": "Please log in to view this page"
   }
 }

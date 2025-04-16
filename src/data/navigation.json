@@ -8,25 +8,36 @@
       "icon": "home"
     },
     {
+      "id": "my-repairs",
+      "text": "My Repairs",
+      "key": "myRepairs",
+      "url": "/my-repairs",
+      "icon": "wrench",
+      "clientOnly": true
+    },
+    {
       "id": "clients",
       "text": "Clients",
       "key": "clients",
       "url": "/clients",
-      "icon": "users"
+      "icon": "users",
+      "adminOnly": true
     },
     {
       "id": "repairs",
       "text": "Repairs",
       "key": "repairs",
       "url": "/repairs",
-      "icon": "wrench"
+      "icon": "wrench",
+      "adminOnly": true
     },
     {
       "id": "services",
       "text": "Services",
       "key": "services",
       "url": "/services",
-      "icon": "cog"
+      "icon": "cog",
+      "adminOnly": true
     }
   ],
   "secondaryMenu": [
@@ -35,14 +46,32 @@
       "text": "Add Client",
       "key": "addClient",
       "url": "/client-form",
-      "icon": "user-plus"
+      "icon": "user-plus",
+      "adminOnly": true
     },
     {
       "id": "new-repair",
       "text": "Add Repair",
       "key": "addRepair",
       "url": "/repair-form",
-      "icon": "plus-circle"
+      "icon": "plus-circle",
+      "adminOnly": true
+    },
+    {
+      "id": "admin-panel",
+      "text": "Mechanic Management",
+      "key": "adminPanel",
+      "url": "/admin",
+      "icon": "users",
+      "adminOnly": true
+    },
+    {
+      "id": "profile",
+      "text": "My Profile",
+      "key": "profile",
+      "url": "/profile",
+      "icon": "user",
+      "requiresAuth": true
     }
   ]
 }

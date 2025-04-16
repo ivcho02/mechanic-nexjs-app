@@ -87,6 +87,8 @@ export interface Repair {
   status: RepairStatus;
   createdAt: Timestamp;
   phone?: string;
+  userEmail?: string;
+  ownerEmail?: string;
 }
 
 // Sorting types
@@ -112,6 +114,10 @@ export interface MenuItem {
   key: string;
   url: string;
   icon: string;
+  requiresAuth?: boolean;
+  adminOnly?: boolean;
+  guestOnly?: boolean;
+  clientOnly?: boolean;
 }
 
 export interface NavigationMenu {

@@ -1,6 +1,7 @@
-import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Repair, RepairStatus, Client, Service } from '@/types';
+import { User } from 'firebase/auth';
 
 /**
  * Fetches all repairs from Firestore, ordered by creation date
@@ -116,5 +117,47 @@ export const deleteClient = async (clientId: string): Promise<void> => {
   } catch (error) {
     console.error('Error deleting client:', error);
     throw error;
+  }
+};
+
+/**
+ * Creates a new client record from a Firebase auth user
+ */
+export const createClientFromAuth = async (user: User): Promise<string | null> => {
+  // Check if a client with this email already exists
+  try {
+    const clientsCollection = collection(db, 'clients');
+    const q = query(clientsCollection);
+    const querySnapshot = await getDocs(q);
+
+    // Check if a client with this email already exists
+    const existingClient = querySnapshot.docs.find(
+      doc => doc.data().email === user.email
+    );
+
+    if (existingClient) {
+      console.log('Client already exists for this email', user.email);
+      return existingClient.id;
+    }
+
+    // Create a new client record with basic information
+    const clientData = {
+      ownerName: user.displayName || user.email?.split('@')[0] || 'New Customer',
+      email: user.email,
+      phone: user.phoneNumber || '',
+      make: '',
+      model: '',
+      engineSize: '',
+      vin: '',
+      userType: 'customer',
+      createdAt: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(clientsCollection, clientData);
+    console.log('Created new client for user:', user.email, 'with ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating client from auth user:', error);
+    return null;
   }
 };

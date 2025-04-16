@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Repair, RepairStatus } from '@/types';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
 import { generatePDF } from '@/helpers/pdfHelper';
@@ -17,6 +17,7 @@ import {
   sortRepairs
 } from '@/helpers/repairHelpers';
 import RepairDetailsModal from '@/components/repairs/RepairDetailsModal';
+import { useAuth } from '@/lib/authContext';
 
 // Define a type for the PDF generator
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,7 +25,9 @@ type PDFMakeType = any;
 
 export default function RepairsPage() {
   const params = useParams();
+  const router = useRouter();
   const lang = params.lang as string;
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
   const [repairs, setRepairs] = useState<Repair[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -41,6 +44,12 @@ export default function RepairsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!authLoading && !user) {
+      router.push(`/${lang}/login`);
+      return;
+    }
+
     const loadDictionary = async () => {
       const dictionary = await getDictionaryClient(lang);
       setDict(dictionary);
@@ -49,7 +58,10 @@ export default function RepairsPage() {
     loadDictionary();
     setIsClient(true);
     setMounted(true);
-    loadRepairs();
+
+    if (user) {
+      loadRepairs();
+    }
 
     // Only load PDF generator in browser environment
     if (typeof window !== 'undefined') {
@@ -89,13 +101,20 @@ export default function RepairsPage() {
         console.error('Error loading pdfmake:', err);
       });
     }
-  }, [lang]);
+  }, [lang, user, authLoading, router]);
 
   const loadRepairs = async () => {
     setIsLoading(true);
     try {
       const repairsData = await fetchRepairs();
-      setRepairs(repairsData);
+
+      // Filter repairs based on user role
+      // Admin sees all repairs, regular users see only their own
+      const userRepairs = isAdmin
+        ? repairsData
+        : repairsData.filter(repair => repair.userEmail === user?.email || repair.ownerEmail === user?.email);
+
+      setRepairs(userRepairs);
     } catch (error) {
       console.error("Error loading repairs:", error);
     } finally {
@@ -178,14 +197,32 @@ export default function RepairsPage() {
     generatePDF(repair, pdfMake, lang, setPdfLoading);
   };
 
-  if (!mounted || !dict || !isClient) {
-    return null; // Prevent rendering during hydration
+  if (!mounted || !dict || !isClient || authLoading) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
+
+  // If user is not authenticated, show login prompt
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">{dict.repairs.title}</h1>
+        <p className="mb-4">{dict.auth?.loginRequired || 'Please log in to view your repairs'}</p>
+        <Link
+          href={`/${lang}/login`}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
+        >
+          {dict.nav.login}
+        </Link>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold">{dict.repairs.title}</h1>
+        <h1 className="text-2xl font-bold">
+          {isAdmin ? dict.repairs.title : (dict.nav.myRepairs || 'My Repairs')}
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <input
@@ -196,12 +233,14 @@ export default function RepairsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          <Link
-            href={`/${lang}/repair-form`}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
-          >
-            {dict.repairs.addRepair}
-          </Link>
+          {isAdmin && (
+            <Link
+              href={`/${lang}/repair-form`}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
+            >
+              {dict.repairs.addRepair}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -329,14 +368,16 @@ export default function RepairsPage() {
                         >
                           {lang === 'bg' ? 'Детайли' : 'Details'}
                         </button>
-                        <Link
-                          href={`/${lang}/repair-form?id=${repair.id}`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          {dict.repairs.edit}
-                        </Link>
+                        {isAdmin && (
+                          <Link
+                            href={`/${lang}/repair-form?id=${repair.id}`}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            {dict.repairs.edit}
+                          </Link>
+                        )}
 
-                        {(repair.status === 'Изпратена оферта' || repair.status === 'В процес') && (
+                        {isAdmin && (repair.status === 'Изпратена оферта' || repair.status === 'В процес') && (
                           <>
                             <button
                               onClick={() => handleUpdateStatus(repair, getNextStatus(repair.status))}
@@ -375,6 +416,7 @@ export default function RepairsPage() {
             pdfMakeAvailable={!!pdfMake}
             lang={lang}
             dict={dict}
+            isAdmin={isAdmin}
           />
         </>
       ) : (

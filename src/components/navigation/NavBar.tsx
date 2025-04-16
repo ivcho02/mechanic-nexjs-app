@@ -2,17 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { MenuItem } from '@/types';
 import navigationData from '@/data/navigation.json';
 import LanguageSwitcher from '../LanguageSwitcher';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
+import { useAuth } from '@/lib/authContext';
+import { logoutUser } from '@/lib/firebase';
 
 const NavBar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [dict, setDict] = useState<Dictionary | null>(null);
+  const { user, isAdmin, loading } = useAuth();
 
   // Get locale from pathname
   const getLocaleFromPathname = () => {
@@ -42,6 +46,15 @@ const NavBar = () => {
   // Create localized URL
   const createLocalizedUrl = (url: string) => {
     return url === '/' ? `/${locale}` : `/${locale}${url}`;
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    const result = await logoutUser();
+    if (result.success) {
+      setIsMenuOpen(false);
+      router.push(`/${locale}/login`);
+    }
   };
 
   // Icons mapping
@@ -85,6 +98,24 @@ const NavBar = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
+      case 'login':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+          </svg>
+        );
+      case 'logout':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        );
+      case 'register':
+        return (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+        );
       default:
         return (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,6 +126,16 @@ const NavBar = () => {
   };
 
   const renderMenuItem = (item: MenuItem, index: number) => {
+    // Skip menu items based on auth state
+    if (
+      (item.requiresAuth && !user) ||
+      (item.adminOnly && !isAdmin) ||
+      (item.clientOnly && (!user || isAdmin)) || // Only show to clients (authenticated non-admin users)
+      (item.guestOnly && user)
+    ) {
+      return null;
+    }
+
     const localizedUrl = createLocalizedUrl(item.url);
 
     // Check for active path considering language prefix
@@ -103,6 +144,20 @@ const NavBar = () => {
 
     // Get localized text using the key
     const itemText = dict?.nav?.[item.key as keyof typeof dict.nav] || item.text || '';
+
+    // Special handling for logout
+    if (item.key === 'logout') {
+      return (
+        <button
+          key={item.id || index}
+          onClick={handleLogout}
+          className={`flex items-center px-4 py-2 mb-1 rounded-md text-gray-700 hover:bg-gray-100 transition-colors duration-200 w-full text-left`}
+        >
+          <span className="mr-3">{getIcon(item.icon)}</span>
+          <span>{itemText}</span>
+        </button>
+      );
+    }
 
     return (
       <Link
@@ -121,8 +176,57 @@ const NavBar = () => {
     );
   };
 
-  if (!mounted) {
-    return null; // Prevent rendering during hydration
+  // Custom auth menu items
+  const authMenuItems: MenuItem[] = user ? [
+    // For logged-in users
+    {
+      id: 'logout',
+      text: dict?.nav?.logout || 'Logout',
+      key: 'logout',
+      url: '/logout',
+      icon: 'logout',
+      requiresAuth: true
+    }
+  ] : [
+    // For guests
+    {
+      id: 'login',
+      text: dict?.nav?.login || 'Login',
+      key: 'login',
+      url: '/login',
+      icon: 'login',
+      guestOnly: true
+    },
+    {
+      id: 'register',
+      text: dict?.nav?.register || 'Register',
+      key: 'register',
+      url: '/register',
+      icon: 'register',
+      guestOnly: true
+    }
+  ];
+
+  // Filter main menu items based on user role
+  const filteredMainMenu = navigationData.mainMenu.filter(item => {
+    // Always show the home menu item
+    if (item.key === 'home') return true;
+
+    // Only admin can see clients and services
+    if (item.adminOnly && !isAdmin) return false;
+
+    // Only clients (non-admin users) can see clientOnly items
+    if (item.clientOnly && (!user || isAdmin)) return false;
+
+    // Show appropriate items based on auth state
+    if (item.requiresAuth && !user) return false;
+    if (item.guestOnly && user) return false;
+
+    return true;
+  });
+
+  if (!mounted || loading) {
+    return null; // Prevent rendering during hydration or auth loading
   }
 
   const mainMenuTitle = dict?.nav?.mainMenu || 'Main Menu';
@@ -164,7 +268,7 @@ const NavBar = () => {
             {mainMenuTitle}
           </h2>
           <div className="flex flex-col">
-            {navigationData.mainMenu.map(renderMenuItem)}
+            {filteredMainMenu.map(renderMenuItem)}
           </div>
         </div>
 
@@ -173,7 +277,11 @@ const NavBar = () => {
             {actionsTitle}
           </h2>
           <div className="flex flex-col">
-            {navigationData.secondaryMenu.map(renderMenuItem)}
+            {navigationData.secondaryMenu
+              .filter(item => !item.adminOnly || isAdmin)
+              .map(renderMenuItem)}
+            {/* Auth menu */}
+            {authMenuItems.map(renderMenuItem)}
           </div>
         </div>
       </nav>
@@ -186,9 +294,12 @@ const NavBar = () => {
               <LanguageSwitcher />
             </div>
             <div className="py-2">
-              {navigationData.mainMenu.map(renderMenuItem)}
+              {filteredMainMenu.map(renderMenuItem)}
               <div className="border-t border-gray-200 my-2"></div>
-              {navigationData.secondaryMenu.map(renderMenuItem)}
+              {navigationData.secondaryMenu
+                .filter(item => !item.adminOnly || isAdmin)
+                .map(renderMenuItem)}
+              {authMenuItems.map(renderMenuItem)}
             </div>
           </div>
         </div>

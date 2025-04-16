@@ -14,6 +14,7 @@ interface RepairDetailsModalProps {
   pdfMakeAvailable: boolean;
   lang: string;
   dict: Dictionary;
+  isAdmin: boolean;
 }
 
 export default function RepairDetailsModal({
@@ -27,7 +28,8 @@ export default function RepairDetailsModal({
   pdfLoading,
   pdfMakeAvailable,
   lang,
-  dict
+  dict,
+  isAdmin
 }: RepairDetailsModalProps) {
   if (!isOpen || !repair) return null;
 
@@ -140,7 +142,7 @@ export default function RepairDetailsModal({
               {pdfLoading ? (lang === 'bg' ? 'Генериране...' : 'Generating...') : (lang === 'bg' ? 'Изтегли оферта' : 'Download Quote')}
             </button>
 
-            {(repair.status === 'Изпратена оферта' || repair.status === 'В процес') && (
+            {isAdmin && (repair.status === 'Изпратена оферта' || repair.status === 'В процес') && (
               <button
                 onClick={() => {
                   onUpdateStatus(repair, getNextStatus(repair.status));
@@ -160,7 +162,7 @@ export default function RepairDetailsModal({
               </button>
             )}
 
-            {(repair.status === 'Изпратена оферта' || repair.status === 'В процес') && (
+            {isAdmin && (repair.status === 'Изпратена оферта' || repair.status === 'В процес') && (
               <button
                 onClick={() => {
                   onCancelRepair(repair);

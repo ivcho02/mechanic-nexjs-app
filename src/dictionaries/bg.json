@@ -15,7 +15,13 @@
     "addClient": "Добави клиент",
     "addRepair": "Нов ремонт",
     "mainMenu": "Основно меню",
-    "actions": "Бързи действия"
+    "actions": "Бързи действия",
+    "login": "Вход",
+    "register": "Регистрация",
+    "logout": "Изход",
+    "myRepairs": "Моите ремонти",
+    "adminPanel": "Управление на механици",
+    "profile": "Моят профил"
   },
   "clients": {
     "title": "Клиенти",
@@ -121,5 +127,19 @@
     "noServices": "Няма намерени услуги",
     "servicesList": "Списък с услуги",
     "notAvailable": "Н/П"
+  },
+  "auth": {
+    "login": "Влезте в акаунта си",
+    "register": "Създайте акаунт",
+    "email": "Имейл адрес",
+    "password": "Парола",
+    "confirmPassword": "Потвърдете паролата",
+    "signIn": "Вход",
+    "registerButton": "Регистрация",
+    "registerPrompt": "Нямате акаунт? Регистрирайте се",
+    "loginPrompt": "Вече имате акаунт? Влезте",
+    "passwordsDontMatch": "Паролите не съвпадат",
+    "logoutSuccess": "Успешно излизане",
+    "loginRequired": "Моля, влезте в акаунта си, за да видите тази страница"
   }
 }

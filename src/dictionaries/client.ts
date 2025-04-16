@@ -17,6 +17,26 @@ export type Dictionary = {
     addRepair: string;
     mainMenu: string;
     actions: string;
+    login: string;
+    register: string;
+    logout: string;
+    myRepairs: string;
+    adminPanel: string;
+    profile: string;
+  };
+  auth: {
+    login: string;
+    register: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    signIn: string;
+    registerButton: string;
+    registerPrompt: string;
+    loginPrompt: string;
+    passwordsDontMatch: string;
+    logoutSuccess: string;
+    loginRequired: string;
   };
   clients: {
     title: string;
