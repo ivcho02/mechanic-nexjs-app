@@ -7,6 +7,16 @@ import { Service } from '@/types';
 import { useParams } from 'next/navigation';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
 
+// Extend the Dictionary type to include missing properties
+type ExtendedDictionary = Dictionary & {
+  services: Dictionary['services'] & {
+    notAvailable?: string;
+    priceUnit: string;
+    addService: string;
+    name: string;
+  }
+};
+
 export default function ServicesPage() {
   const params = useParams();
   const lang = params.lang as string;
@@ -17,13 +27,13 @@ export default function ServicesPage() {
     price: '',
     description: '',
   });
-  const [dict, setDict] = useState<Dictionary | null>(null);
+  const [dict, setDict] = useState<ExtendedDictionary | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const loadDictionary = async () => {
       const dictionary = await getDictionaryClient(lang);
-      setDict(dictionary);
+      setDict(dictionary as ExtendedDictionary);
     };
 
     loadDictionary();

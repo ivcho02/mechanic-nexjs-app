@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -49,14 +49,8 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
     setMounted(true);
   }, [lang]);
 
-  // Fetch client data if in edit mode
-  useEffect(() => {
-    if (isEditMode && clientId) {
-      fetchClient(clientId);
-    }
-  }, [clientId, isEditMode]);
-
-  const fetchClient = async (id: string) => {
+  // Define fetchClient with useCallback before using it in useEffect
+  const fetchClient = useCallback(async (id: string) => {
     setIsLoading(true);
     try {
       const clientDoc = await getDoc(doc(db, 'clients', id));
@@ -79,7 +73,14 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [router, lang, setFormData]);
+
+  // Fetch client data if in edit mode
+  useEffect(() => {
+    if (isEditMode && clientId) {
+      fetchClient(clientId);
+    }
+  }, [clientId, isEditMode, fetchClient]);
 
   // Fetch car makes immediately from our static database
   useEffect(() => {

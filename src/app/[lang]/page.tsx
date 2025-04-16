@@ -1,11 +1,29 @@
-/* @next-codemod-ignore */
+'use client';
 
 import Link from 'next/link';
-import { getDictionary } from '@/dictionaries';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Dictionary, getDictionaryClient } from '@/dictionaries/client';
 
-export default async function Home({ params }: { params: { lang: string } }) {
-  const dict = await getDictionary(params.lang);
-  const lang = params.lang;
+export default function Page() {
+  const params = useParams();
+  const lang = params.lang as string;
+  const [dict, setDict] = useState<Dictionary | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(lang);
+      setDict(dictionary);
+    };
+
+    loadDictionary();
+    setMounted(true);
+  }, [lang]);
+
+  if (!mounted || !dict) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -11,9 +11,6 @@ export async function generateStaticParams() {
   return locales.map(lang => ({ lang }));
 }
 
-// This comment tells Next.js to ignore lint warnings related to params handling
-/* eslint-disable @next/next/no-sync-scripts */
-
 export default function RootLayout({
   children,
   params,
