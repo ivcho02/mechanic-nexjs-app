@@ -1,6 +1,8 @@
 // Static database of car makes, models, and engines
 // This provides a fallback when online APIs are unavailable or too costly
 
+import carDataJson from '@/data/carData.json';
+
 export interface CarMake {
   name: string;
   models: CarModel[];
@@ -11,208 +13,8 @@ export interface CarModel {
   engines: string[];
 }
 
-export const carData: CarMake[] = [
-  {
-    name: "Audi",
-    models: [
-      { name: "A3", engines: ["1.2L 4 цил.", "1.4L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "A4", engines: ["1.8L 4 цил.", "2.0L 4 цил.", "2.7L 6 цил.", "3.0L 6 цил.", "3.2L 6 цил."] },
-      { name: "A6", engines: ["2.0L 4 цил.", "2.4L 6 цил.", "2.7L 6 цил.", "3.0L 6 цил.", "4.2L 8 цил."] },
-      { name: "Q5", engines: ["2.0L 4 цил.", "3.0L 6 цил.", "3.2L 6 цил."] },
-      { name: "Q7", engines: ["3.0L 6 цил.", "3.6L 6 цил.", "4.2L 8 цил."] }
-    ]
-  },
-  {
-    name: "BMW",
-    models: [
-      { name: "Series 1", engines: ["1.6L 4 цил.", "2.0L 4 цил.", "3.0L 6 цил."] },
-      { name: "Series 3", engines: ["1.6L 4 цил.", "2.0L 4 цил.", "2.5L 6 цил.", "3.0L 6 цил."] },
-      { name: "Series 5", engines: ["2.0L 4 цил.", "2.5L 6 цил.", "3.0L 6 цил.", "4.4L 8 цил."] },
-      { name: "X3", engines: ["2.0L 4 цил.", "3.0L 6 цил."] },
-      { name: "X5", engines: ["3.0L 6 цил.", "4.4L 8 цил.", "4.8L 8 цил."] }
-    ]
-  },
-  {
-    name: "Ford",
-    models: [
-      { name: "Fiesta", engines: ["1.0L 3 цил.", "1.1L 4 цил.", "1.25L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил."] },
-      { name: "Focus", engines: ["1.0L 3 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Mondeo", engines: ["1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил.", "2.5L 5 цил."] },
-      { name: "Kuga", engines: ["1.5L 4 цил.", "2.0L 4 цил.", "2.5L 5 цил."] },
-      { name: "Mustang", engines: ["2.3L 4 цил.", "5.0L 8 цил."] }
-    ]
-  },
-  {
-    name: "Honda",
-    models: [
-      { name: "Civic", engines: ["1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "Accord", engines: ["1.5L 4 цил.", "2.0L 4 цил.", "2.4L 4 цил.", "3.0L 6 цил."] },
-      { name: "CR-V", engines: ["1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил.", "2.4L 4 цил."] },
-      { name: "HR-V", engines: ["1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил."] },
-      { name: "Jazz", engines: ["1.2L 4 цил.", "1.3L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил."] }
-    ]
-  },
-  {
-    name: "Hyundai",
-    models: [
-      { name: "i10", engines: ["1.0L 3 цил.", "1.2L 4 цил."] },
-      { name: "i20", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил."] },
-      { name: "i30", engines: ["1.0L 3 цил.", "1.4L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Tucson", engines: ["1.6L 4 цил.", "1.7L 4 цил.", "2.0L 4 цил."] },
-      { name: "Santa Fe", engines: ["2.0L 4 цил.", "2.2L 4 цил.", "2.4L 4 цил.", "3.3L 6 цил."] }
-    ]
-  },
-  {
-    name: "Kia",
-    models: [
-      { name: "Picanto", engines: ["1.0L 3 цил.", "1.2L 4 цил."] },
-      { name: "Rio", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил."] },
-      { name: "Ceed", engines: ["1.0L 3 цил.", "1.4L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Sportage", engines: ["1.6L 4 цил.", "1.7L 4 цил.", "2.0L 4 цил."] },
-      { name: "Sorento", engines: ["2.0L 4 цил.", "2.2L 4 цил.", "2.4L 4 цил.", "3.3L 6 цил."] }
-    ]
-  },
-  {
-    name: "Mazda",
-    models: [
-      { name: "2", engines: ["1.3L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил."] },
-      { name: "3", engines: ["1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил.", "2.2L 4 цил.", "2.5L 4 цил."] },
-      { name: "6", engines: ["1.8L 4 цил.", "2.0L 4 цил.", "2.5L 4 цил."] },
-      { name: "CX-3", engines: ["1.5L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "CX-5", engines: ["2.0L 4 цил.", "2.2L 4 цил.", "2.5L 4 цил."] }
-    ]
-  },
-  {
-    name: "Mercedes-Benz",
-    models: [
-      { name: "A-Class", engines: ["1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "C-Class", engines: ["1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил.", "2.1L 4 цил.", "3.0L 6 цил."] },
-      { name: "E-Class", engines: ["1.8L 4 цил.", "2.0L 4 цил.", "2.1L 4 цил.", "3.0L 6 цил.", "4.0L 8 цил."] },
-      { name: "GLC", engines: ["2.0L 4 цил.", "2.1L 4 цил.", "3.0L 6 цил."] },
-      { name: "GLE", engines: ["2.1L 4 цил.", "3.0L 6 цил.", "4.0L 8 цил."] }
-    ]
-  },
-  {
-    name: "Nissan",
-    models: [
-      { name: "Micra", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.5L 4 цил."] },
-      { name: "Juke", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.6L 4 цил."] },
-      { name: "Qashqai", engines: ["1.2L 4 цил.", "1.3L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "X-Trail", engines: ["1.3L 4 цил.", "1.6L 4 цил.", "1.7L 4 цил.", "2.0L 4 цил.", "2.5L 4 цил."] },
-      { name: "Leaf", engines: ["Електрически"] }
-    ]
-  },
-  {
-    name: "Opel",
-    models: [
-      { name: "Corsa", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.3L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил."] },
-      { name: "Astra", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Insignia", engines: ["1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Mokka", engines: ["1.2L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил.", "1.7L 4 цил."] },
-      { name: "Grandland X", engines: ["1.2L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] }
-    ]
-  },
-  {
-    name: "Peugeot",
-    models: [
-      { name: "208", engines: ["1.0L 3 цил.", "1.2L 3 цил.", "1.4L 4 цил.", "1.6L 4 цил."] },
-      { name: "308", engines: ["1.2L 3 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "3008", engines: ["1.2L 3 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "5008", engines: ["1.2L 3 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "508", engines: ["1.6L 4 цил.", "2.0L 4 цил."] }
-    ]
-  },
-  {
-    name: "Renault",
-    models: [
-      { name: "Clio", engines: ["0.9L 3 цил.", "1.0L 3 цил.", "1.2L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил."] },
-      { name: "Megane", engines: ["1.2L 4 цил.", "1.3L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Captur", engines: ["0.9L 3 цил.", "1.0L 3 цил.", "1.2L 4 цил.", "1.3L 4 цил.", "1.5L 4 цил."] },
-      { name: "Kadjar", engines: ["1.2L 4 цил.", "1.3L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.7L 4 цил."] },
-      { name: "Scenic", engines: ["1.2L 4 цил.", "1.3L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.7L 4 цил."] }
-    ]
-  },
-  {
-    name: "Seat",
-    models: [
-      { name: "Ibiza", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил."] },
-      { name: "Leon", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "Ateca", engines: ["1.0L 3 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Arona", engines: ["1.0L 3 цил.", "1.5L 4 цил.", "1.6L 4 цил."] },
-      { name: "Tarraco", engines: ["1.5L 4 цил.", "2.0L 4 цил."] }
-    ]
-  },
-  {
-    name: "Skoda",
-    models: [
-      { name: "Fabia", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.6L 4 цил."] },
-      { name: "Octavia", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "Superb", engines: ["1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "Karoq", engines: ["1.0L 3 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Kodiaq", engines: ["1.4L 4 цил.", "1.5L 4 цил.", "2.0L 4 цил."] }
-    ]
-  },
-  {
-    name: "Toyota",
-    models: [
-      { name: "Yaris", engines: ["1.0L 3 цил.", "1.3L 4 цил.", "1.5L 4 цил."] },
-      { name: "Corolla", engines: ["1.2L 4 цил.", "1.3L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "C-HR", engines: ["1.2L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "RAV4", engines: ["2.0L 4 цил.", "2.5L 4 цил."] },
-      { name: "Camry", engines: ["2.0L 4 цил.", "2.5L 4 цил.", "3.5L 6 цил."] }
-    ]
-  },
-  {
-    name: "Volkswagen",
-    models: [
-      { name: "Polo", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил."] },
-      { name: "Golf", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "Passat", engines: ["1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил."] },
-      { name: "Tiguan", engines: ["1.4L 4 цил.", "1.5L 4 цил.", "2.0L 4 цил."] },
-      { name: "Arteon", engines: ["1.5L 4 цил.", "2.0L 4 цил."] }
-    ]
-  },
-  {
-    name: "Volvo",
-    models: [
-      { name: "V40", engines: ["1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил.", "2.5L 5 цил."] },
-      { name: "S60", engines: ["1.6L 4 цил.", "2.0L 4 цил.", "2.4L 5 цил.", "3.0L 6 цил."] },
-      { name: "V60", engines: ["1.6L 4 цил.", "2.0L 4 цил.", "2.4L 5 цил.", "3.0L 6 цил."] },
-      { name: "XC40", engines: ["1.5L 3 цил.", "2.0L 4 цил."] },
-      { name: "XC60", engines: ["2.0L 4 цил.", "2.4L 5 цил.", "3.0L 6 цил."] }
-    ]
-  },
-  {
-    name: "Dacia",
-    models: [
-      { name: "Sandero", engines: ["0.9L 3 цил.", "1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил."] },
-      { name: "Logan", engines: ["0.9L 3 цил.", "1.0L 3 цил.", "1.2L 4 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил."] },
-      { name: "Duster", engines: ["1.0L 3 цил.", "1.2L 4 цил.", "1.3L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "Lodgy", engines: ["1.2L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил."] },
-      { name: "Dokker", engines: ["1.2L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил."] }
-    ]
-  },
-  {
-    name: "Lada",
-    models: [
-      { name: "Vesta", engines: ["1.6L 4 цил.", "1.8L 4 цил."] },
-      { name: "Granta", engines: ["1.6L 4 цил."] },
-      { name: "Niva", engines: ["1.6L 4 цил.", "1.7L 4 цил."] },
-      { name: "XRAY", engines: ["1.6L 4 цил.", "1.8L 4 цил."] },
-      { name: "Largus", engines: ["1.6L 4 цил."] }
-    ]
-  },
-  {
-    name: "Citroen",
-    models: [
-      { name: "C1", engines: ["1.0L 3 цил.", "1.2L 3 цил."] },
-      { name: "C3", engines: ["1.0L 3 цил.", "1.2L 3 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил."] },
-      { name: "C4", engines: ["1.2L 3 цил.", "1.4L 4 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "2.0L 4 цил."] },
-      { name: "C5", engines: ["1.6L 4 цил.", "1.8L 4 цил.", "2.0L 4 цил.", "2.2L 4 цил.", "2.7L 6 цил.", "3.0L 6 цил."] },
-      { name: "Berlingo", engines: ["1.2L 3 цил.", "1.5L 4 цил.", "1.6L 4 цил.", "1.9L 4 цил.", "2.0L 4 цил."] }
-    ]
-  }
-];
+// Type assertion for imported JSON data
+export const carData = carDataJson as CarMake[];
 
 // Helper functions
 
@@ -227,9 +29,23 @@ export function getCarMakes(): string[] {
  * Get all models for a specific car make
  */
 export function getCarModels(make: string): string[] {
-  const carMake = carData.find(m => m.name.toLowerCase() === make.toLowerCase());
-  if (!carMake) return [];
+  if (!make) return [];
 
+  // Log for debugging
+  console.log(`Getting models for make: "${make}"`);
+  console.log(`Available makes: ${carData.map(m => m.name).join(', ')}`);
+
+  // Normalize make name to improve matching
+  const normalizedMakeName = make.trim().toLowerCase();
+
+  const carMake = carData.find(m => m.name.toLowerCase() === normalizedMakeName);
+
+  if (!carMake) {
+    console.log(`No make found for: "${make}"`);
+    return [];
+  }
+
+  console.log(`Found make: ${carMake.name} with ${carMake.models.length} models`);
   return carMake.models.map(model => model.name);
 }
 
@@ -237,10 +53,16 @@ export function getCarModels(make: string): string[] {
  * Get all available engine sizes for a specific car make and model
  */
 export function getCarEngines(make: string, model: string): string[] {
-  const carMake = carData.find(m => m.name.toLowerCase() === make.toLowerCase());
+  if (!make || !model) return [];
+
+  // Normalize input to improve matching
+  const normalizedMakeName = make.trim().toLowerCase();
+  const normalizedModelName = model.trim().toLowerCase();
+
+  const carMake = carData.find(m => m.name.toLowerCase() === normalizedMakeName);
   if (!carMake) return [];
 
-  const carModel = carMake.models.find(m => m.name.toLowerCase() === model.toLowerCase());
+  const carModel = carMake.models.find(m => m.name.toLowerCase() === normalizedModelName);
   if (!carModel) return [];
 
   return carModel.engines;
