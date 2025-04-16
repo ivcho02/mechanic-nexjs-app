@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Service } from '@/types';
 import { useParams } from 'next/navigation';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
+import { fetchServices } from '@/helpers/firebaseHelpers';
 
 // Extend the Dictionary type to include missing properties
 type ExtendedDictionary = Dictionary & {
@@ -38,20 +39,15 @@ export default function ServicesPage() {
 
     loadDictionary();
     setMounted(true);
-    fetchServices();
+    loadServices();
   }, [lang]);
 
-  const fetchServices = async () => {
+  const loadServices = async () => {
     try {
-      const q = query(collection(db, 'services'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      const servicesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Service[];
+      const servicesData = await fetchServices();
       setServices(servicesData);
     } catch (error) {
-      console.error("Error fetching services:", error);
+      console.error("Error loading services:", error);
     }
   };
 
@@ -71,7 +67,7 @@ export default function ServicesPage() {
         description: '',
       });
 
-      fetchServices();
+      loadServices();
     } catch (error) {
       console.error('Error adding service:', error);
     }

@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Client, Timestamp } from '@/types';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
+import { fetchClients } from '@/helpers/firebaseHelpers';
 
 type SortField = 'date' | 'name' | 'car';
 type SortOrder = 'asc' | 'desc';
@@ -31,21 +30,16 @@ export default function ClientsPage() {
 
     loadDictionary();
     setMounted(true);
-    fetchClients();
+    loadClients();
   }, [lang]);
 
-  const fetchClients = async () => {
+  const loadClients = async () => {
     setIsLoading(true);
     try {
-      const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      const clientsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Client[];
+      const clientsData = await fetchClients();
       setClients(clientsData);
     } catch (error) {
-      console.error("Error fetching clients:", error);
+      console.error("Error loading clients:", error);
     } finally {
       setIsLoading(false);
     }

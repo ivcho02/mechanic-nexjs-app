@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 // Supported locales
 export const locales = ['en', 'bg'];
-export const defaultLocale = 'en';
+export const defaultLocale = 'bg';
 
 export function middleware(request: NextRequest) {
   // Get pathname

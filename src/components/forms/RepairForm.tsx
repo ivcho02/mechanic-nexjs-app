@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Client, Service, RepairData, RepairFormData, SelectedService } from '@/types';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
+import { fetchClients, fetchServices } from '@/helpers/firebaseHelpers';
 
 // Extend the Dictionary type locally to include priceUnit
 type ExtendedDictionary = Dictionary & {
@@ -61,8 +62,18 @@ export default function RepairForm() {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchClients(), fetchServices()]);
-      setIsLoading(false);
+      try {
+        const [clientsData, servicesData] = await Promise.all([
+          fetchClients(),
+          fetchServices()
+        ]);
+        setClients(clientsData);
+        setServices(servicesData);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadData();
@@ -158,58 +169,6 @@ export default function RepairForm() {
       console.error("Error fetching repair:", error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchClients = async () => {
-    try {
-      const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      const clientsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ownerName: doc.data().ownerName,
-        phone: doc.data().phone || '',
-        make: doc.data().make,
-        model: doc.data().model,
-        engineSize: doc.data().engineSize,
-        vin: doc.data().vin || '',
-      }));
-
-      // Remove duplicates based on ownerName
-      const uniqueClients = clientsData.reduce((acc: Client[], current) => {
-        const x = acc.find(item => item.ownerName === current.ownerName);
-        if (!x) {
-          return acc.concat([current]);
-        } else {
-          return acc;
-        }
-      }, []);
-
-      setClients(uniqueClients);
-      console.log('Clients loaded:', uniqueClients.length);
-      return uniqueClients;
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      return [];
-    }
-  };
-
-  const fetchServices = async () => {
-    try {
-      const q = query(collection(db, 'services'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      const servicesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name,
-        price: doc.data().price,
-        description: doc.data().description,
-      })) as Service[];
-      setServices(servicesData);
-      console.log('Services loaded:', servicesData.length);
-      return servicesData;
-    } catch (error) {
-      console.error("Error fetching services:", error);
-      return [];
     }
   };
 
