@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Repair, RepairStatus } from '@/types';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
 import { generatePDF } from '@/helpers/pdfHelper';
-import { fetchRepairs, updateRepairStatus, cancelRepair } from '@/helpers/firebaseHelpers';
+import { updateRepairStatus, cancelRepair } from '@/helpers/firebaseHelpers';
 import {
   SortField,
   SortOrder,
@@ -18,6 +18,8 @@ import {
 } from '@/helpers/repairHelpers';
 import RepairDetailsModal from '@/components/repairs/RepairDetailsModal';
 import { useAuth } from '@/lib/authContext';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Define a type for the PDF generator
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,6 +44,48 @@ export default function RepairsPage() {
   const [mounted, setMounted] = useState(false);
   const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Define loadRepairs with useCallback before it's used in useEffect
+  const loadRepairs = useCallback(async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const repairsRef = collection(db, 'repairs');
+
+      let q;
+      if (isAdmin) {
+        // Admins see all repairs
+        q = query(repairsRef, orderBy('createdAt', 'desc'));
+      } else {
+        // Regular users only see their own repairs
+        q = query(
+          repairsRef,
+          where('ownerEmail', '==', user.email),
+          orderBy('createdAt', 'desc')
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      const repairsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Repair[];
+
+      setRepairs(repairsData);
+    } catch (error) {
+      console.error('Error loading repairs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, isAdmin]);
+
+  // Load repairs when user changes
+  useEffect(() => {
+    if (user) {
+      loadRepairs();
+    }
+  }, [user, loadRepairs]);
 
   useEffect(() => {
     // Redirect to login if not authenticated
@@ -102,25 +146,6 @@ export default function RepairsPage() {
       });
     }
   }, [lang, user, authLoading, router]);
-
-  const loadRepairs = async () => {
-    setIsLoading(true);
-    try {
-      const repairsData = await fetchRepairs();
-
-      // Filter repairs based on user role
-      // Admin sees all repairs, regular users see only their own
-      const userRepairs = isAdmin
-        ? repairsData
-        : repairsData.filter(repair => repair.userEmail === user?.email || repair.ownerEmail === user?.email);
-
-      setRepairs(userRepairs);
-    } catch (error) {
-      console.error("Error loading repairs:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {

@@ -212,15 +212,15 @@ const NavBar = () => {
     // Always show the home menu item
     if (item.key === 'home') return true;
 
-    // Only admin can see clients and services
-    if (item.adminOnly && !isAdmin) return false;
+    // Only admin can see admin-only items
+    if ('adminOnly' in item && item.adminOnly && !isAdmin) return false;
 
     // Only clients (non-admin users) can see clientOnly items
-    if (item.clientOnly && (!user || isAdmin)) return false;
+    if ('clientOnly' in item && item.clientOnly && (!user || isAdmin)) return false;
 
-    // Show appropriate items based on auth state
-    if (item.requiresAuth && !user) return false;
-    if (item.guestOnly && user) return false;
+    // Show appropriate items based on auth state - check if property exists before using it
+    if ('requiresAuth' in item && item.requiresAuth && !user) return false;
+    if ('guestOnly' in item && item.guestOnly && user) return false;
 
     return true;
   });

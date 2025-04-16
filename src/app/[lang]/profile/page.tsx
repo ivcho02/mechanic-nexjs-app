@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -28,28 +28,7 @@ export default function ProfilePage() {
     vin: '',
   });
 
-  useEffect(() => {
-    const loadDictionary = async () => {
-      const dictionary = await getDictionaryClient(lang);
-      setDict(dictionary);
-    };
-
-    loadDictionary();
-  }, [lang]);
-
-  useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!authLoading && !user) {
-      router.push(`/${lang}/login`);
-      return;
-    }
-
-    if (user) {
-      fetchClientData();
-    }
-  }, [user, authLoading, router, lang]);
-
-  const fetchClientData = async () => {
+  const fetchClientData = useCallback(async () => {
     if (!user?.email) return;
 
     setIsLoading(true);
@@ -77,7 +56,28 @@ export default function ProfilePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(lang);
+      setDict(dictionary);
+    };
+
+    loadDictionary();
+  }, [lang]);
+
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!authLoading && !user) {
+      router.push(`/${lang}/login`);
+      return;
+    }
+
+    if (user) {
+      fetchClientData();
+    }
+  }, [user, authLoading, router, lang, fetchClientData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

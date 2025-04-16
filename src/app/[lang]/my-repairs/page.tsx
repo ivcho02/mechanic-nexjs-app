@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
@@ -29,100 +29,19 @@ export default function MyRepairsPage() {
   const [sortBy, setSortBy] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  useEffect(() => {
-    const loadDictionary = async () => {
-      const dictionary = await getDictionaryClient(lang);
-      setDict(dictionary);
-    };
-
-    loadDictionary();
-  }, [lang]);
-
-  useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!authLoading && !user) {
-      router.push(`/${lang}/login`);
-      return;
-    }
-
-    if (user) {
-      fetchClientData();
-    }
-  }, [user, authLoading, router, lang]);
-
-  // Check if repair ID is in the URL and open that repair's details
-  useEffect(() => {
-    const checkRepairId = async () => {
-      // Get repair ID from URL if present
-      const url = new URL(window.location.href);
-      const repairId = url.searchParams.get('id');
-
-      if (repairId && repairs.length > 0) {
-        // Find repair in current repairs
-        const repair = repairs.find(r => r.id === repairId);
-
-        if (repair) {
-          // Open modal with this repair
-          setSelectedRepair(repair);
-          setIsModalOpen(true);
-        } else {
-          // Try to fetch the repair if it's not in the list
-          try {
-            const repairDoc = await getDoc(doc(db, 'repairs', repairId));
-            if (repairDoc.exists()) {
-              const repairData = { id: repairDoc.id, ...repairDoc.data() } as Repair;
-
-              // Check if this repair belongs to this client
-              if (client && (
-                repairData.ownerEmail === user?.email ||
-                (repairData.ownerName === client.ownerName &&
-                 repairData.make === client.make &&
-                 repairData.model === client.model)
-              )) {
-                setSelectedRepair(repairData);
-                setIsModalOpen(true);
-              }
-            }
-          } catch (error) {
-            console.error('Error fetching repair:', error);
-          }
-        }
-      }
-    };
-
-    if (repairs.length > 0 && typeof window !== 'undefined') {
-      checkRepairId();
-    }
-  }, [repairs, user, client]);
-
-  const fetchClientData = async () => {
-    if (!user?.email) return;
-
-    setIsLoading(true);
-    try {
-      const clientsRef = collection(db, 'clients');
-      const q = query(clientsRef, where('email', '==', user.email));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        const clientDoc = querySnapshot.docs[0];
-        const clientData = clientDoc.data() as Client;
-        clientData.id = clientDoc.id;
-        setClient(clientData);
-
-        // Now fetch repairs for this client
-        fetchClientRepairs(clientData);
-      } else {
-        // No client record found, set loading to false
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Error fetching client data:', error);
-      setIsLoading(false);
-    }
+  // Track all repairs with their match reason for debugging
+  type RepairInfo = {
+    id: string;
+    ownerName?: string;
+    ownerEmail?: string;
+    phone?: string;
+    make?: string;
+    model?: string;
+    createdAt: string;
   };
 
-  const fetchClientRepairs = async (clientData: Client) => {
+  // Define fetchClientRepairs with useCallback
+  const fetchClientRepairs = useCallback(async (clientData: Client) => {
     if (!user?.email) return;
 
     try {
@@ -148,8 +67,7 @@ export default function MyRepairsPage() {
 
       console.log(`Found ${allRepairsSnapshot.docs.length} total repairs in database`);
 
-      // Track all repairs with their match reason for debugging
-      const allRepairsWithReason: Array<{repair: any, reason: string, matched: boolean}> = [];
+      const allRepairsWithReason: Array<{repair: RepairInfo, reason: string, matched: boolean}> = [];
 
       // Combine results and remove duplicates
       const repairsMap = new Map();
@@ -277,7 +195,101 @@ export default function MyRepairsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  // Define fetchClientData with useCallback
+  const fetchClientData = useCallback(async () => {
+    if (!user?.email) return;
+
+    setIsLoading(true);
+    try {
+      const clientsRef = collection(db, 'clients');
+      const q = query(clientsRef, where('email', '==', user.email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const clientDoc = querySnapshot.docs[0];
+        const clientData = clientDoc.data() as Client;
+        clientData.id = clientDoc.id;
+        setClient(clientData);
+
+        // Now fetch repairs for this client
+        fetchClientRepairs(clientData);
+      } else {
+        // No client record found, set loading to false
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error fetching client data:', error);
+      setIsLoading(false);
+    }
+  }, [user, fetchClientRepairs]);
+
+  useEffect(() => {
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(lang);
+      setDict(dictionary);
+    };
+
+    loadDictionary();
+  }, [lang]);
+
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!authLoading && !user) {
+      router.push(`/${lang}/login`);
+      return;
+    }
+
+    if (user) {
+      fetchClientData();
+    }
+  }, [user, authLoading, router, lang, fetchClientData]);
+
+  // Check if repair ID is in the URL and open that repair's details
+  useEffect(() => {
+    const checkRepairId = async () => {
+      // Get repair ID from URL if present
+      const url = new URL(window.location.href);
+      const repairId = url.searchParams.get('id');
+
+      if (repairId && repairs.length > 0) {
+        // Find repair in current repairs
+        const repair = repairs.find(r => r.id === repairId);
+
+        if (repair) {
+          // Open modal with this repair
+          setSelectedRepair(repair);
+          setIsModalOpen(true);
+        } else {
+          // Try to fetch the repair if it's not in the list
+          try {
+            const repairDoc = await getDoc(doc(db, 'repairs', repairId));
+            if (repairDoc.exists()) {
+              const repairData = { id: repairDoc.id, ...repairDoc.data() } as Repair;
+
+              // Check if this repair belongs to this client
+              if (client && (
+                repairData.ownerEmail === user?.email ||
+                (repairData.ownerName === client.ownerName &&
+                 repairData.make === client.make &&
+                 repairData.model === client.model)
+              )) {
+                setSelectedRepair(repairData);
+                setIsModalOpen(true);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching repair:', error);
+          }
+        }
+      }
+    };
+
+    if (repairs.length > 0 && typeof window !== 'undefined') {
+      checkRepairId();
+    }
+  }, [repairs, user, client]);
 
   // Open the modal with repair details
   const openRepairDetails = (repair: Repair) => {

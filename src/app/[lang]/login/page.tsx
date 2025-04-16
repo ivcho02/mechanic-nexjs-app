@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { loginWithEmail, auth } from '@/lib/firebase';
+import { loginWithEmail } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
 
@@ -47,8 +47,9 @@ export default function LoginPage() {
       } else {
         router.push(`/${lang}`);
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during login');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during login';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
