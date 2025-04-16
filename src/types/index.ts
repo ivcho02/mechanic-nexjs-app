@@ -109,6 +109,7 @@ export interface CarModel {
 export interface MenuItem {
   id: string;
   text: string;
+  key: string;
   url: string;
   icon: string;
 }

@@ -4,13 +4,21 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { Repair, RepairStatus, SortField, SortOrder, Timestamp } from '@/types';
+import { useParams } from 'next/navigation';
+import { Repair, RepairStatus, Timestamp } from '@/types';
+import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
+
+type SortField = 'date' | 'name' | 'car' | 'status' | 'cost';
+type SortOrder = 'asc' | 'desc';
 
 // Define a type for the PDF generator
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PDFMakeType = any;
 
 export default function RepairsPage() {
+  const params = useParams();
+  const lang = params.lang as string;
+
   const [repairs, setRepairs] = useState<Repair[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,9 +28,18 @@ export default function RepairsPage() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [dict, setDict] = useState<Dictionary | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(lang);
+      setDict(dictionary);
+    };
+
+    loadDictionary();
     setIsClient(true);
+    setMounted(true);
     fetchRepairs();
 
     // Only load PDF generator in browser environment
@@ -63,7 +80,7 @@ export default function RepairsPage() {
         console.error('Error loading pdfmake:', err);
       });
     }
-  }, []);
+  }, [lang]);
 
   const fetchRepairs = async () => {
     setIsLoading(true);
@@ -84,7 +101,7 @@ export default function RepairsPage() {
 
   const formatDate = (timestamp: Timestamp) => {
     const date = new Date(timestamp.seconds * 1000);
-    return date.toLocaleDateString('bg-BG');
+    return date.toLocaleDateString(lang === 'bg' ? 'bg-BG' : 'en-US');
   };
 
   const getStatusColor = (status: RepairStatus) => {
@@ -122,12 +139,12 @@ export default function RepairsPage() {
         },
         content: [
           // Header
-          { text: 'Автосервиз', style: 'header', alignment: 'center' },
-          { text: 'Оферта за ремонт', style: 'subheader', alignment: 'center', margin: [0, 0, 0, 10] },
+          { text: lang === 'bg' ? 'Автосервиз' : 'Auto Service', style: 'header', alignment: 'center' },
+          { text: lang === 'bg' ? 'Оферта за ремонт' : 'Repair Quote', style: 'subheader', alignment: 'center', margin: [0, 0, 0, 10] },
 
           // Date and Offer Number
-          { text: `Дата: ${formatDate(repair.createdAt)}`, margin: [0, 5, 0, 0] },
-          { text: `Номер на оферта: ${repair.id}`, margin: [0, 0, 0, 10] },
+          { text: `${lang === 'bg' ? 'Дата' : 'Date'}: ${formatDate(repair.createdAt)}`, margin: [0, 5, 0, 0] },
+          { text: `${lang === 'bg' ? 'Номер на оферта' : 'Quote Number'}: ${repair.id}`, margin: [0, 0, 0, 10] },
 
           // Client Information
           {
@@ -135,11 +152,11 @@ export default function RepairsPage() {
               headerRows: 1,
               widths: ['*'],
               body: [
-                [{ text: 'Информация за клиента', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
-                [{ text: `Име: ${repair.ownerName}` }],
-                ...(repair.phone ? [[{ text: `Телефон: ${repair.phone}` }]] : []),
-                [{ text: `Автомобил: ${repair.make} ${repair.model}` }],
-                [{ text: `Обем на двигателя: ${repair.engineSize}` }]
+                [{ text: lang === 'bg' ? 'Информация за клиента' : 'Client Information', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
+                [{ text: `${lang === 'bg' ? 'Име' : 'Name'}: ${repair.ownerName}` }],
+                ...(repair.phone ? [[{ text: `${lang === 'bg' ? 'Телефон' : 'Phone'}: ${repair.phone}` }]] : []),
+                [{ text: `${lang === 'bg' ? 'Автомобил' : 'Vehicle'}: ${repair.make} ${repair.model}` }],
+                [{ text: `${lang === 'bg' ? 'Обем на двигателя' : 'Engine Size'}: ${repair.engineSize}` }]
               ]
             },
             margin: [0, 0, 0, 10]
@@ -151,7 +168,7 @@ export default function RepairsPage() {
               headerRows: 1,
               widths: ['*'],
               body: [
-                [{ text: 'Предложени ремонтни дейности', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
+                [{ text: lang === 'bg' ? 'Предложени ремонтни дейности' : 'Proposed Repair Services', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
                 [{ text: repair.repairs }]
               ]
             },
@@ -164,10 +181,10 @@ export default function RepairsPage() {
               headerRows: 1,
               widths: ['*'],
               body: [
-                [{ text: 'Финансова информация', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
-                [{ text: `Обща сума: ${repair.cost} лв.` }],
-                [{ text: `ДДС: ${(repair.cost * 0.2).toFixed(2)} лв.` }],
-                [{ text: `Крайна сума: ${(repair.cost * 1.2).toFixed(2)} лв.` }]
+                [{ text: lang === 'bg' ? 'Финансова информация' : 'Financial Information', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
+                [{ text: `${lang === 'bg' ? 'Обща сума' : 'Total Amount'}: ${repair.cost} ${lang === 'bg' ? 'лв.' : 'BGN'}` }],
+                [{ text: `${lang === 'bg' ? 'ДДС' : 'VAT'}: ${(repair.cost * 0.2).toFixed(2)} ${lang === 'bg' ? 'лв.' : 'BGN'}` }],
+                [{ text: `${lang === 'bg' ? 'Крайна сума' : 'Final Amount'}: ${(repair.cost * 1.2).toFixed(2)} ${lang === 'bg' ? 'лв.' : 'BGN'}` }]
               ]
             },
             margin: [0, 0, 0, 10]
@@ -179,7 +196,7 @@ export default function RepairsPage() {
               headerRows: 1,
               widths: ['*'],
               body: [
-                [{ text: 'Допълнителна информация', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
+                [{ text: lang === 'bg' ? 'Допълнителна информация' : 'Additional Information', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
                 [{ text: repair.additionalInfo }]
               ]
             },
@@ -192,17 +209,21 @@ export default function RepairsPage() {
               headerRows: 1,
               widths: ['*'],
               body: [
-                [{ text: 'Общи условия', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
-                [{ text: '1. Срокът за ремонт е приблизителен и може да се промени в зависимост от наличността на части.' }],
-                [{ text: '2. Офертата е валидна 7 дни от датата на издаване.' }]
+                [{ text: lang === 'bg' ? 'Общи условия' : 'Terms and Conditions', style: 'tableHeader', fillColor: '#2980b9', color: '#ffffff' }],
+                [{ text: lang === 'bg'
+                  ? '1. Срокът за ремонт е приблизителен и може да се промени в зависимост от наличността на части.'
+                  : '1. The repair timeframe is approximate and may change depending on parts availability.' }],
+                [{ text: lang === 'bg'
+                  ? '2. Офертата е валидна 7 дни от датата на издаване.'
+                  : '2. The quote is valid for 7 days from the date of issue.' }]
               ]
             },
             margin: [0, 0, 0, 10]
           },
 
           // Footer
-          { text: 'С уважение,', margin: [0, 20, 0, 0] },
-          { text: 'Екипът на Автосервиз', margin: [0, 5, 0, 0] }
+          { text: lang === 'bg' ? 'С уважение,' : 'Best regards,', margin: [0, 20, 0, 0] },
+          { text: lang === 'bg' ? 'Екипът на Автосервиз' : 'The Auto Service Team', margin: [0, 5, 0, 0] }
         ],
         styles: {
           header: {
@@ -224,7 +245,10 @@ export default function RepairsPage() {
       };
 
       // Generate PDF
-      pdfMake.createPdf(docDefinition).download(`оферта_ремонт_${repair.id}.pdf`);
+      const fileName = lang === 'bg'
+        ? `оферта_ремонт_${repair.id}.pdf`
+        : `repair_quote_${repair.id}.pdf`;
+      pdfMake.createPdf(docDefinition).download(fileName);
     } catch (error) {
       console.error('Error generating PDF:', error);
     } finally {
@@ -248,17 +272,19 @@ export default function RepairsPage() {
 
   // Get button text based on current status
   const getStatusButtonText = (status: RepairStatus): string => {
+    if (!dict) return '';
+
     switch (status) {
       case 'Изпратена оферта':
-        return 'Започни ремонт';
+        return lang === 'bg' ? 'Започни ремонт' : 'Start Repair';
       case 'В процес':
-        return 'Завърши ремонт';
+        return lang === 'bg' ? 'Завърши ремонт' : 'Complete Repair';
       case 'Завършен':
-        return 'Завършен';
+        return lang === 'bg' ? 'Завършен' : 'Completed';
       case 'Отказан':
-        return 'Отказан';
+        return lang === 'bg' ? 'Отказан' : 'Cancelled';
       default:
-        return 'Промени статус';
+        return lang === 'bg' ? 'Промени статус' : 'Change Status';
     }
   };
 
@@ -338,29 +364,29 @@ export default function RepairsPage() {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  if (!isClient) {
-    return null;
+  if (!mounted || !dict || !isClient) {
+    return null; // Prevent rendering during hydration
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold">Ремонти</h1>
+        <h1 className="text-2xl font-bold">{dict.repairs.title}</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <input
             type="text"
-            placeholder="Търси ремонт..."
+            placeholder={dict.repairs.searchPlaceholder}
             className="px-4 py-2 border border-gray-300 rounded-md w-full"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
           <Link
-            href="/repair-form"
+            href={`/${lang}/repair-form`}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
           >
-            Добави ремонт
+            {dict.repairs.addRepair}
           </Link>
         </div>
       </div>
@@ -373,12 +399,12 @@ export default function RepairsPage() {
         <>
           <div className="flex flex-wrap justify-between items-center mb-4">
             <p className="text-gray-600 mb-2 sm:mb-0">
-              {filteredRepairs.length} {filteredRepairs.length === 1 ? 'ремонт' : 'ремонта'} намерени
-              {searchTerm && ` за "${searchTerm}"`}
+              {filteredRepairs.length} {filteredRepairs.length === 1 ? dict.repairs.repairFound : dict.repairs.repairsFound}
+              {searchTerm && ` ${dict.repairs.searchResultsFor} "${searchTerm}"`}
             </p>
 
             <div className="flex gap-2 flex-wrap">
-              <div className="text-sm text-gray-600 self-center">Сортирай по:</div>
+              <div className="text-sm text-gray-600 self-center">{dict.repairs.sortBy}:</div>
               <button
                 onClick={() => toggleSort('date')}
                 className={`px-3 py-1 rounded-md text-sm transition-colors ${
@@ -387,7 +413,7 @@ export default function RepairsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Дата
+                {dict.repairs.date}
                 {sortField === 'date' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -400,7 +426,7 @@ export default function RepairsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Име
+                {dict.clients.name}
                 {sortField === 'name' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -413,7 +439,7 @@ export default function RepairsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Автомобил
+                {dict.repairs.car}
                 {sortField === 'car' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -426,7 +452,7 @@ export default function RepairsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Статус
+                {dict.repairs.status}
                 {sortField === 'status' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -439,7 +465,7 @@ export default function RepairsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Цена
+                {lang === 'bg' ? 'Цена' : 'Cost'}
                 {sortField === 'cost' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -466,7 +492,7 @@ export default function RepairsPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Автомобил</p>
+                      <p className="text-sm text-gray-600">{dict.repairs.car}</p>
                       <div className="divide-y divide-gray-200">
                         <div className="py-3 flex justify-between items-center">
                           <div className="flex items-center">
@@ -479,20 +505,20 @@ export default function RepairsPage() {
                         </div>
 
                         <div className="py-3">
-                          <h4 className="font-medium mb-1">Клиент</h4>
+                          <h4 className="font-medium mb-1">{dict.repairs.client}</h4>
                           <p>{repair.ownerName}</p>
-                          {repair.phone && <p className="text-sm text-gray-600">Тел: {repair.phone}</p>}
+                          {repair.phone && <p className="text-sm text-gray-600">{lang === 'bg' ? 'Тел:' : 'Tel:'} {repair.phone}</p>}
                           {repair.vin && <p className="text-sm text-gray-600">VIN: {repair.vin}</p>}
                         </div>
 
                         <div className="py-3">
-                          <h4 className="font-medium mb-1">Услуги</h4>
+                          <h4 className="font-medium mb-1">{dict.repairs.service}</h4>
                           {repair.selectedServices && repair.selectedServices.length > 0 ? (
                             <ul className="space-y-1">
                               {repair.selectedServices.map((service, index) => (
                                 <li key={index} className="flex justify-between">
                                   <span>{service.name}</span>
-                                  <span className="text-gray-600">{service.price.toFixed(2)} лв.</span>
+                                  <span className="text-gray-600">{service.price.toFixed(2)} {lang === 'bg' ? 'лв.' : 'BGN'}</span>
                                 </li>
                               ))}
                             </ul>
@@ -511,7 +537,7 @@ export default function RepairsPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Дата</p>
+                      <p className="text-sm text-gray-600">{dict.repairs.date}</p>
                       <p className="font-medium">{formatDate(repair.createdAt)}</p>
                     </div>
                   </div>
@@ -524,18 +550,18 @@ export default function RepairsPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Цена</p>
-                      <p className="text-lg font-semibold">{repair.cost.toFixed(2)} лв.</p>
+                      <p className="text-sm text-gray-600">{dict.repairs.totalCost}</p>
+                      <p className="text-lg font-semibold">{repair.cost.toFixed(2)} {lang === 'bg' ? 'лв.' : 'BGN'}</p>
                     </div>
                   </div>
 
                   <div className="border-t pt-4 flex flex-col gap-3">
                     <div className="flex justify-between">
                       <Link
-                        href={`/repair-form?id=${repair.id}`}
+                        href={`/${lang}/repair-form?id=${repair.id}`}
                         className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
                       >
-                        Редактирай
+                        {dict.repairs.edit}
                       </Link>
                       <button
                         onClick={() => generatePDF(repair)}
@@ -544,7 +570,7 @@ export default function RepairsPage() {
                           pdfLoading || !pdfMake ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
-                        {pdfLoading ? 'Генериране...' : 'Изтегли оферта'}
+                        {pdfLoading ? (lang === 'bg' ? 'Генериране...' : 'Generating...') : (lang === 'bg' ? 'Изтегли оферта' : 'Download Quote')}
                       </button>
                     </div>
 
@@ -557,7 +583,7 @@ export default function RepairsPage() {
                             updatingId === repair.id ? 'opacity-50 cursor-wait' : ''
                           }`}
                         >
-                          {updatingId === repair.id ? 'Обновяване...' : getStatusButtonText(repair.status)}
+                          {updatingId === repair.id ? (lang === 'bg' ? 'Обновяване...' : 'Updating...') : getStatusButtonText(repair.status)}
                         </button>
                       )}
 
@@ -569,13 +595,15 @@ export default function RepairsPage() {
                             updatingId === repair.id ? 'opacity-50 cursor-wait' : ''
                           }`}
                         >
-                          Откажи
+                          {lang === 'bg' ? 'Откажи' : 'Cancel'}
                         </button>
                       )}
 
                       {(repair.status === 'Завършен' || repair.status === 'Отказан') && (
                         <div className="w-full text-center py-2 text-sm text-gray-500">
-                          Статус: {repair.status === 'Завършен' ? 'Ремонтът е завършен' : 'Ремонтът е отказан'}
+                          {lang === 'bg' ? 'Статус:' : 'Status:'} {repair.status === 'Завършен'
+                            ? (lang === 'bg' ? 'Ремонтът е завършен' : 'Repair is completed')
+                            : (lang === 'bg' ? 'Ремонтът е отказан' : 'Repair is cancelled')}
                         </div>
                       )}
                     </div>
@@ -586,16 +614,28 @@ export default function RepairsPage() {
           </div>
         </>
       ) : (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-500">Няма намерени ремонти.</p>
-          {searchTerm && (
-            <button
-              className="mt-4 text-blue-600 hover:text-blue-800"
-              onClick={() => setSearchTerm('')}
-            >
-              Изчисти търсенето
-            </button>
-          )}
+        <div className="text-center py-10">
+          <div className="text-5xl text-gray-300 mb-4">🔍</div>
+          <p className="text-xl text-gray-500 mb-2">
+            {searchTerm ? dict.repairs.noSearchResults : dict.repairs.noRepairs}
+          </p>
+          <p className="text-gray-500">
+            {searchTerm ? (
+              <button
+                className="mt-4 text-blue-600 hover:text-blue-800"
+                onClick={() => setSearchTerm('')}
+              >
+                {dict.repairs.tryDifferentSearch}
+              </button>
+            ) : (
+              <Link
+                href={`/${lang}/repair-form`}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                {dict.repairs.addYourFirstRepair}
+              </Link>
+            )}
+          </p>
         </div>
       )}
     </div>

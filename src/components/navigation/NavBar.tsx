@@ -5,19 +5,43 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { MenuItem } from '@/types';
 import navigationData from '@/data/navigation.json';
+import LanguageSwitcher from '../LanguageSwitcher';
+import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
 
 const NavBar = () => {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [dict, setDict] = useState<Dictionary | null>(null);
+
+  // Get locale from pathname
+  const getLocaleFromPathname = () => {
+    const segments = pathname?.split('/') || [];
+    return segments.length > 1 ? segments[1] : 'en'; // Default to 'en' if no locale
+  };
+
+  const locale = getLocaleFromPathname();
 
   // Wait for client-side rendering to avoid hydration issues
   useEffect(() => {
     setMounted(true);
-  }, []);
+
+    // Load dictionary based on locale
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(locale);
+      setDict(dictionary);
+    };
+
+    loadDictionary();
+  }, [locale]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  // Create localized URL
+  const createLocalizedUrl = (url: string) => {
+    return url === '/' ? `/${locale}` : `/${locale}${url}`;
   };
 
   // Icons mapping
@@ -71,11 +95,19 @@ const NavBar = () => {
   };
 
   const renderMenuItem = (item: MenuItem, index: number) => {
-    const isActive = pathname === item.url;
+    const localizedUrl = createLocalizedUrl(item.url);
+
+    // Check for active path considering language prefix
+    const isActive = pathname === localizedUrl ||
+                    (item.url === '/' && pathname === `/${locale}`);
+
+    // Get localized text using the key
+    const itemText = dict?.nav?.[item.key as keyof typeof dict.nav] || item.text || '';
+
     return (
       <Link
         key={item.id || index}
-        href={item.url}
+        href={localizedUrl}
         className={`flex items-center px-4 py-2 mb-1 rounded-md ${
           isActive
             ? 'bg-blue-100 text-blue-700'
@@ -84,7 +116,7 @@ const NavBar = () => {
         onClick={() => setIsMenuOpen(false)}
       >
         <span className="mr-3">{getIcon(item.icon)}</span>
-        <span>{item.text}</span>
+        <span>{itemText}</span>
       </Link>
     );
   };
@@ -92,6 +124,10 @@ const NavBar = () => {
   if (!mounted) {
     return null; // Prevent rendering during hydration
   }
+
+  const mainMenuTitle = dict?.nav?.mainMenu || 'Main Menu';
+  const actionsTitle = dict?.nav?.actions || 'Quick Actions';
+  const siteTitle = dict?.home?.title || 'Auto Mechanic';
 
   return (
     <>
@@ -117,12 +153,15 @@ const NavBar = () => {
       {/* Desktop navigation */}
       <nav className="hidden md:flex flex-col w-64 bg-white h-screen fixed border-r border-gray-200">
         <div className="p-6">
-          <h1 className="text-2xl font-bold text-blue-600">Автосервиз</h1>
+          <h1 className="text-2xl font-bold text-blue-600">{siteTitle}</h1>
+          <div className="mt-4">
+            <LanguageSwitcher />
+          </div>
         </div>
 
         <div className="px-4 py-2">
           <h2 className="text-xs uppercase font-semibold text-gray-500 tracking-wider mb-2">
-            Основно меню
+            {mainMenuTitle}
           </h2>
           <div className="flex flex-col">
             {navigationData.mainMenu.map(renderMenuItem)}
@@ -131,7 +170,7 @@ const NavBar = () => {
 
         <div className="px-4 py-2 mt-4">
           <h2 className="text-xs uppercase font-semibold text-gray-500 tracking-wider mb-2">
-            Бързи действия
+            {actionsTitle}
           </h2>
           <div className="flex flex-col">
             {navigationData.secondaryMenu.map(renderMenuItem)}
@@ -143,6 +182,9 @@ const NavBar = () => {
       {isMenuOpen && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-40 md:hidden transition-opacity duration-200 ease-in-out">
           <div className="fixed bottom-24 right-6 bg-white rounded-lg shadow-xl w-48 overflow-hidden">
+            <div className="p-3 border-b border-gray-200">
+              <LanguageSwitcher />
+            </div>
             <div className="py-2">
               {navigationData.mainMenu.map(renderMenuItem)}
               <div className="border-t border-gray-200 my-2"></div>

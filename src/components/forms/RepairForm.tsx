@@ -1,14 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Client, Service, RepairData, RepairFormData, SelectedService } from '@/types';
+import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
+
+// Extend the Dictionary type locally to include priceUnit
+type ExtendedDictionary = Dictionary & {
+  services: Dictionary['services'] & {
+    priceUnit: string;
+  }
+};
 
 export default function RepairForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const lang = params.lang as string || 'en';
+
   const clientIdFromUrl = searchParams.get('clientId');
   const repairIdFromUrl = searchParams.get('id');
   const isEditMode = !!repairIdFromUrl;
@@ -19,6 +30,8 @@ export default function RepairForm() {
   const [selectedService, setSelectedService] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [repairData, setRepairData] = useState<RepairData | null>(null);
+  const [dict, setDict] = useState<ExtendedDictionary | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState<RepairFormData>({
     ownerName: '',
     phone: '',
@@ -32,6 +45,17 @@ export default function RepairForm() {
     additionalInfo: '',
     status: 'Изпратена оферта',
   });
+
+  // Load dictionary
+  useEffect(() => {
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(lang);
+      setDict(dictionary as ExtendedDictionary);
+    };
+
+    loadDictionary();
+    setMounted(true);
+  }, [lang]);
 
   // First load clients and services
   useEffect(() => {
@@ -288,16 +312,20 @@ export default function RepairForm() {
       router.push('/repairs');
     } catch (error) {
       console.error('Error saving repair:', error);
-      alert('Възникна грешка при запазването!');
+      alert('Error saving the repair!');
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (!mounted || !dict) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">
-        {isEditMode ? 'Редактиране на ремонт' : 'Нов ремонт'}
+        {isEditMode ? dict.repairForm.editRepair : dict.repairForm.addRepair}
       </h1>
 
       {isLoading && (
@@ -310,7 +338,7 @@ export default function RepairForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
             <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">
-              Клиент
+              {dict.repairForm.client}
             </label>
             <select
               id="clientId"
@@ -320,7 +348,7 @@ export default function RepairForm() {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               disabled={isEditMode}
             >
-              <option value="">Избери клиент</option>
+              <option value="">{dict.repairForm.selectClient}</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
                   {client.ownerName} - {client.make} {client.model}
@@ -331,7 +359,7 @@ export default function RepairForm() {
 
           <div>
             <label htmlFor="ownerName" className="block text-sm font-medium text-gray-700">
-              Име на собственика
+              {dict.clientForm.ownerName}
             </label>
             <input
               type="text"
@@ -347,7 +375,7 @@ export default function RepairForm() {
 
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-              Телефон
+              {dict.clientForm.phone}
             </label>
             <input
               type="text"
@@ -362,7 +390,7 @@ export default function RepairForm() {
 
           <div>
             <label htmlFor="make" className="block text-sm font-medium text-gray-700">
-              Марка
+              {dict.clientForm.make}
             </label>
             <input
               type="text"
@@ -377,7 +405,7 @@ export default function RepairForm() {
 
           <div>
             <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-              Модел
+              {dict.clientForm.model}
             </label>
             <input
               type="text"
@@ -392,7 +420,7 @@ export default function RepairForm() {
 
           <div>
             <label htmlFor="engineSize" className="block text-sm font-medium text-gray-700">
-              Двигател
+              {dict.clientForm.engineSize}
             </label>
             <input
               type="text"
@@ -407,7 +435,7 @@ export default function RepairForm() {
 
           <div>
             <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
-              VIN
+              {dict.clientForm.vin}
             </label>
             <input
               type="text"
@@ -422,7 +450,7 @@ export default function RepairForm() {
 
           <div className="md:col-span-2">
             <label htmlFor="serviceId" className="block text-sm font-medium text-gray-700">
-              Добави услуга
+              {dict.repairForm.addService}
             </label>
             <div className="flex space-x-2">
               <select
@@ -431,10 +459,10 @@ export default function RepairForm() {
                 onChange={(e) => setSelectedService(e.target.value)}
                 className="flex-grow mt-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
-                <option value="">Избери услуга</option>
+                <option value="">{dict.repairForm.service}</option>
                 {services.map((service) => (
                   <option key={service.id} value={service.id}>
-                    {service.name} - {service.price} лв.
+                    {service.name} - {service.price} {dict.services.priceUnit}
                   </option>
                 ))}
               </select>
@@ -444,14 +472,14 @@ export default function RepairForm() {
                 disabled={!selectedService}
                 className="mt-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400"
               >
-                Добави
+                {dict.repairForm.addService}
               </button>
             </div>
           </div>
 
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Избрани услуги
+              {dict.repairForm.selectedServices}
             </label>
             {formData.selectedServices.length > 0 ? (
               <div className="border rounded-md divide-y">
@@ -464,7 +492,7 @@ export default function RepairForm() {
                       )}
                     </div>
                     <div className="flex items-center space-x-3">
-                      <span className="font-medium">{service.price} лв.</span>
+                      <span className="font-medium">{service.price} {dict.services.priceUnit}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveService(service.id)}
@@ -478,18 +506,18 @@ export default function RepairForm() {
                   </div>
                 ))}
                 <div className="p-3 bg-gray-50 flex justify-between">
-                  <span className="font-bold">Общо:</span>
-                  <span className="font-bold">{formData.cost} лв.</span>
+                  <span className="font-bold">{dict.repairForm.totalCost}:</span>
+                  <span className="font-bold">{formData.cost} {dict.services.priceUnit}</span>
                 </div>
               </div>
             ) : (
-              <div className="text-gray-500 italic">Няма избрани услуги</div>
+              <div className="text-gray-500 italic">{dict.repairForm.noServicesSelected}</div>
             )}
           </div>
 
           <div className="md:col-span-2">
             <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700">
-              Допълнителна информация
+              {dict.repairForm.notes}
             </label>
             <textarea
               id="additionalInfo"
@@ -497,13 +525,14 @@ export default function RepairForm() {
               value={formData.additionalInfo}
               onChange={handleChange}
               rows={3}
+              placeholder={dict.repairForm.notesPlaceholder}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
 
           <div>
             <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-              Статус
+              {dict.repairForm.status}
             </label>
             <select
               id="status"
@@ -513,12 +542,9 @@ export default function RepairForm() {
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
-              <option value="Изпратена оферта">Изпратена оферта</option>
-              <option value="Очаква се потвърждение">Очаква се потвърждение</option>
-              <option value="Потвърдена">Потвърдена</option>
-              <option value="В процес">В процес</option>
-              <option value="Приключена">Приключена</option>
-              <option value="Отказана">Отказана</option>
+              <option value="Изпратена оферта">{dict.repairs.pending}</option>
+              <option value="В процес">{dict.repairs.inProgress}</option>
+              <option value="Завършен">{dict.repairs.completed}</option>
             </select>
           </div>
 
@@ -529,14 +555,14 @@ export default function RepairForm() {
               className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
               disabled={isLoading}
             >
-              Отказ
+              {dict.repairForm.cancel}
             </button>
             <button
               type="submit"
               className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
               disabled={isLoading}
             >
-              {isLoading ? 'Запазване...' : isEditMode ? 'Запази промените' : 'Създай ремонт'}
+              {isLoading ? dict.repairForm.loading : dict.repairForm.save}
             </button>
           </div>
         </div>

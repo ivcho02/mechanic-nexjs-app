@@ -4,21 +4,35 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { Client, Timestamp } from '@/types';
+import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
 
 type SortField = 'date' | 'name' | 'car';
 type SortOrder = 'asc' | 'desc';
 
 export default function ClientsPage() {
+  const params = useParams();
+  const lang = params.lang as string;
+
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [dict, setDict] = useState<Dictionary | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(lang);
+      setDict(dictionary);
+    };
+
+    loadDictionary();
+    setMounted(true);
     fetchClients();
-  }, []);
+  }, [lang]);
 
   const fetchClients = async () => {
     setIsLoading(true);
@@ -58,9 +72,9 @@ export default function ClientsPage() {
   };
 
   const formatDate = (timestamp: Timestamp | undefined) => {
-    if (!timestamp) return 'Неизвестна дата';
+    if (!timestamp) return lang === 'bg' ? 'Неизвестна дата' : 'Unknown date';
     const date = new Date(timestamp.seconds * 1000);
-    return date.toLocaleDateString('bg-BG');
+    return date.toLocaleDateString(lang === 'bg' ? 'bg-BG' : 'en-US');
   };
 
   const toggleSort = (field: SortField) => {
@@ -81,25 +95,48 @@ export default function ClientsPage() {
   // Sort clients based on current sort field and order
   filteredClients = [...filteredClients].sort((a, b) => sortClients(a, b, sortField, sortOrder));
 
+  if (!mounted || !dict) {
+    return null; // Prevent rendering during hydration
+  }
+
+  // Translations
+  const clientsTitle = dict.clients.title;
+  const searchPlaceholder = dict.clients.searchPlaceholder;
+  const addClientButton = dict.clients.addClient;
+  const clientsFound = dict.clients.clientsFound;
+  const clientFound = dict.clients.clientFound;
+  const searchResultsFor = dict.clients.searchResultsFor;
+  const sortBy = dict.clients.sortBy;
+  const date = dict.clients.date;
+  const name = dict.clients.name;
+  const car = dict.clients.car;
+  const phone = dict.clients.phone;
+  const notSpecified = dict.clients.notSpecified;
+  const engineSize = dict.clients.engineSize;
+  const vinNumber = dict.clients.vinNumber;
+  const newRepair = dict.clients.newRepair;
+  const edit = dict.clients.edit;
+  const viewRepairs = dict.clients.viewRepairs;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold">Клиенти</h1>
+        <h1 className="text-2xl font-bold">{clientsTitle}</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <input
             type="text"
-            placeholder="Търси клиент..."
+            placeholder={searchPlaceholder}
             className="px-4 py-2 border border-gray-300 rounded-md w-full"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
           <Link
-            href="/client-form"
+            href={`/${lang}/client-form`}
             className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 text-center"
           >
-            Добави клиент
+            {addClientButton}
           </Link>
         </div>
       </div>
@@ -112,12 +149,12 @@ export default function ClientsPage() {
         <>
           <div className="flex flex-wrap justify-between items-center mb-4">
             <p className="text-gray-600 mb-2 sm:mb-0">
-              {filteredClients.length} {filteredClients.length === 1 ? 'клиент' : 'клиенти'} намерени
-              {searchTerm && ` за "${searchTerm}"`}
+              {filteredClients.length} {filteredClients.length === 1 ? clientFound : clientsFound}
+              {searchTerm && ` ${searchResultsFor} "${searchTerm}"`}
             </p>
 
             <div className="flex gap-2">
-              <div className="text-sm text-gray-600 self-center">Сортирай по:</div>
+              <div className="text-sm text-gray-600 self-center">{sortBy}:</div>
               <button
                 onClick={() => toggleSort('date')}
                 className={`px-3 py-1 rounded-md text-sm transition-colors ${
@@ -126,7 +163,7 @@ export default function ClientsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Дата
+                {date}
                 {sortField === 'date' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -139,7 +176,7 @@ export default function ClientsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Име
+                {name}
                 {sortField === 'name' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -152,7 +189,7 @@ export default function ClientsPage() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Автомобил
+                {car}
                 {sortField === 'car' && (
                   <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
@@ -178,7 +215,7 @@ export default function ClientsPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Автомобил</p>
+                      <p className="text-sm text-gray-600">{car}</p>
                       <p className="font-medium">{client.make} {client.model}</p>
                     </div>
                   </div>
@@ -191,7 +228,7 @@ export default function ClientsPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">VIN номер</p>
+                        <p className="text-sm text-gray-600">{vinNumber}</p>
                         <p className="font-medium">{client.vin}</p>
                       </div>
                     </div>
@@ -204,8 +241,8 @@ export default function ClientsPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Телефон</p>
-                      <p className="font-medium">{client.phone || 'Не е посочен'}</p>
+                      <p className="text-sm text-gray-600">{phone}</p>
+                      <p className="font-medium">{client.phone || notSpecified}</p>
                     </div>
                   </div>
 
@@ -216,7 +253,7 @@ export default function ClientsPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Дата</p>
+                      <p className="text-sm text-gray-600">{date}</p>
                       <p className="font-medium">{formatDate(client.createdAt)}</p>
                     </div>
                   </div>
@@ -228,7 +265,7 @@ export default function ClientsPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Обем на двигателя</p>
+                      <p className="text-sm text-gray-600">{engineSize}</p>
                       <p className="font-medium">{client.engineSize}</p>
                     </div>
                   </div>
@@ -236,22 +273,22 @@ export default function ClientsPage() {
                   <div className="mt-4 border-t pt-4 flex justify-between">
                     <Link
                       className="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      href={`/repair-form?clientId=${client.id}`}
+                      href={`/${lang}/repair-form?clientId=${client.id}`}
                     >
-                      <span>Нов ремонт</span>
+                      <span>{newRepair}</span>
                     </Link>
                     <div className="flex gap-2">
                       <Link
-                        href={`/client-form?id=${client.id}`}
+                        href={`/${lang}/client-form?id=${client.id}`}
                         className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
                       >
-                        Редактирай
+                        {edit}
                       </Link>
                       <Link
-                        href={`/repairs?clientId=${client.id}`}
+                        href={`/${lang}/repairs?clientId=${client.id}`}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
                       >
-                        История
+                        {viewRepairs}
                       </Link>
                     </div>
                   </div>
@@ -261,23 +298,14 @@ export default function ClientsPage() {
           </div>
         </>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-500 dark:text-gray-400">Няма намерени клиенти.</p>
-          {searchTerm ? (
-            <button
-              className="mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-              onClick={() => setSearchTerm('')}
-            >
-              Изчисти търсенето
-            </button>
-          ) : (
-            <Link
-              href="/client-form"
-              className="mt-4 inline-block text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-            >
-              Добави нов клиент
-            </Link>
-          )}
+        <div className="text-center py-10">
+          <div className="text-5xl text-gray-300 mb-4">🔍</div>
+          <p className="text-xl text-gray-500 mb-2">
+            {searchTerm ? dict.clients.noSearchResults : dict.clients.noClients}
+          </p>
+          <p className="text-gray-500">
+            {searchTerm ? dict.clients.tryDifferentSearch : dict.clients.addYourFirstClient}
+          </p>
         </div>
       )}
     </div>

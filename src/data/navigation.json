@@ -1,26 +1,30 @@
 {
   "mainMenu": [
     {
-      "id": "dashboard",
-      "text": "Начало",
+      "id": "home",
+      "text": "Home",
+      "key": "home",
       "url": "/",
       "icon": "home"
     },
     {
       "id": "clients",
-      "text": "Клиенти",
+      "text": "Clients",
+      "key": "clients",
       "url": "/clients",
       "icon": "users"
     },
     {
       "id": "repairs",
-      "text": "Ремонти",
+      "text": "Repairs",
+      "key": "repairs",
       "url": "/repairs",
       "icon": "wrench"
     },
     {
       "id": "services",
-      "text": "Услуги",
+      "text": "Services",
+      "key": "services",
       "url": "/services",
       "icon": "cog"
     }
@@ -28,13 +32,15 @@
   "secondaryMenu": [
     {
       "id": "new-client",
-      "text": "Добави клиент",
+      "text": "Add Client",
+      "key": "addClient",
       "url": "/client-form",
       "icon": "user-plus"
     },
     {
       "id": "new-repair",
-      "text": "Нов ремонт",
+      "text": "Add Repair",
+      "key": "addRepair",
       "url": "/repair-form",
       "icon": "plus-circle"
     }

@@ -6,12 +6,19 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'fir
 import { db } from '@/lib/firebase';
 import { getCarMakes, getCarModels, getCarEngines } from '@/lib/carData';
 import { Client } from '@/types';
+import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
 
-export default function ClientForm() {
+interface ClientFormProps {
+  lang?: string;
+}
+
+export default function ClientForm({ lang = 'en' }: ClientFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clientId = searchParams.get('id');
   const isEditMode = !!clientId;
+  const [dict, setDict] = useState<Dictionary | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState({
     ownerName: '',
@@ -31,6 +38,16 @@ export default function ClientForm() {
     models: false,
     details: false
   });
+
+  useEffect(() => {
+    const loadDictionary = async () => {
+      const dictionary = await getDictionaryClient(lang);
+      setDict(dictionary);
+    };
+
+    loadDictionary();
+    setMounted(true);
+  }, [lang]);
 
   // Fetch client data if in edit mode
   useEffect(() => {
@@ -55,7 +72,7 @@ export default function ClientForm() {
         });
       } else {
         console.error("Client not found");
-        router.push('/clients');
+        router.push(`/${lang}/clients`);
       }
     } catch (error) {
       console.error("Error fetching client:", error);
@@ -156,7 +173,7 @@ export default function ClientForm() {
         });
       }
 
-      router.push('/clients');
+      router.push(`/${lang}/clients`);
     } catch (error) {
       console.error('Error saving client:', error);
     } finally {
@@ -180,10 +197,32 @@ export default function ClientForm() {
     }));
   };
 
+  if (!mounted || !dict) {
+    return null; // Prevent rendering during hydration
+  }
+
+  // Translations
+  const formTitle = isEditMode
+    ? dict.clientForm.editClient
+    : dict.clientForm.addClient;
+  const ownerNameLabel = dict.clientForm.ownerName;
+  const phoneLabel = dict.clientForm.phone;
+  const makeLabel = dict.clientForm.make;
+  const modelLabel = dict.clientForm.model;
+  const engineSizeLabel = dict.clientForm.engineSize;
+  const vinLabel = dict.clientForm.vin;
+  const selectMakeText = dict.clientForm.selectMake;
+  const selectModelText = dict.clientForm.selectModel;
+  const selectEngineSizeText = dict.clientForm.selectEngineSize;
+  const customEngineSizeText = dict.clientForm.customEngineSize;
+  const cancelButtonText = dict.clientForm.cancel;
+  const saveButtonText = dict.clientForm.save;
+  const loadingText = dict.clientForm.loading;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">
-        {isEditMode ? 'Редактиране на клиент' : 'Добавяне на нов клиент'}
+        {formTitle}
       </h1>
 
       {isLoading && (
@@ -196,7 +235,7 @@ export default function ClientForm() {
         <div className="grid grid-cols-1 gap-6">
           <div className="space-y-2">
             <label htmlFor="ownerName" className="block text-sm font-medium text-gray-700">
-              Име на собственика
+              {ownerNameLabel}
             </label>
             <input
               type="text"
@@ -205,13 +244,13 @@ export default function ClientForm() {
               value={formData.ownerName}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-              Телефонен номер
+              {phoneLabel}
             </label>
             <input
               type="tel"
@@ -219,15 +258,118 @@ export default function ClientForm() {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              required
-              placeholder="0888 123 456"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div className="space-y-2">
+            <label htmlFor="make" className="block text-sm font-medium text-gray-700">
+              {makeLabel}
+            </label>
+            <div className="relative">
+              <select
+                id="make"
+                name="make"
+                value={formData.make}
+                onChange={handleChange}
+                required
+                className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 appearance-none"
+              >
+                <option value="">{selectMakeText}</option>
+                {carMakes.map(make => (
+                  <option key={make} value={make}>{make}</option>
+                ))}
+              </select>
+              {loading.makes && (
+                <div className="absolute right-2 top-2">
+                  <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700">
+              {modelLabel}
+            </label>
+            <div className="relative">
+              <select
+                id="model"
+                name="model"
+                value={formData.model}
+                onChange={handleChange}
+                required
+                disabled={!formData.make || loading.models}
+                className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 appearance-none disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                <option value="">{selectModelText}</option>
+                {carModels.map(model => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
+              {loading.models && (
+                <div className="absolute right-2 top-2">
+                  <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="engineSize" className="block text-sm font-medium text-gray-700">
+              {engineSizeLabel}
+            </label>
+            <div className="relative">
+              <select
+                id="engineSize"
+                name="engineSize"
+                value={formData.engineSize}
+                onChange={handleChange}
+                required
+                disabled={!formData.model || loading.details}
+                className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 appearance-none disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                <option value="">{selectEngineSizeText}</option>
+                {engineSizes.map(size => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              {loading.details && (
+                <div className="absolute right-2 top-2">
+                  <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            {formData.model && engineSizes.length === 0 && !loading.details && (
+              <div className="mt-3">
+                <label htmlFor="customEngineSize" className="block text-sm font-medium text-gray-700">
+                  {customEngineSizeText}
+                </label>
+                <input
+                  type="text"
+                  id="customEngineSize"
+                  value={formData.engineSize}
+                  onChange={handleCustomEngineSize}
+                  required
+                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
-              VIN номер
+              {vinLabel}
             </label>
             <input
               type="text"
@@ -235,116 +377,24 @@ export default function ClientForm() {
               name="vin"
               value={formData.vin}
               onChange={handleChange}
-              placeholder="WVWZZZ1JZ3W386752"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="make" className="block text-sm font-medium text-gray-700">
-              Марка
-            </label>
-            <select
-              id="make"
-              name="make"
-              value={formData.make}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Избери марка</option>
-              {carMakes.map((make) => (
-                <option key={make} value={make}>
-                  {make}
-                </option>
-              ))}
-            </select>
-            {loading.makes && (
-              <div className="text-sm text-gray-500">Зареждане на марки...</div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-              Модел
-            </label>
-            <select
-              id="model"
-              name="model"
-              value={formData.model}
-              onChange={handleChange}
-              required
-              disabled={!formData.make || loading.models}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-            >
-              <option value="">Избери модел</option>
-              {carModels.map((model) => (
-                <option key={model} value={model}>
-                  {model}
-                </option>
-              ))}
-            </select>
-            {loading.models && (
-              <div className="text-sm text-gray-500">Зареждане на модели...</div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="engineSize" className="block text-sm font-medium text-gray-700">
-              Обем на двигателя
-            </label>
-            <div className="flex flex-col space-y-2">
-              {engineSizes.length > 0 ? (
-                <select
-                  id="engineSize"
-                  name="engineSize"
-                  value={formData.engineSize}
-                  onChange={handleChange}
-                  required
-                  disabled={!formData.model || loading.details}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                >
-                  <option value="">Избери обем на двигателя</option>
-                  {engineSizes.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  id="engineSize"
-                  name="engineSize"
-                  value={formData.engineSize}
-                  onChange={handleCustomEngineSize}
-                  placeholder={formData.model ? "Въведи обем на двигателя" : "Първо избери марка и модел"}
-                  required
-                  disabled={!formData.model}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-                />
-              )}
-              {loading.details && (
-                <div className="text-sm text-gray-500">Зареждане на данни за двигателя...</div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-4 mt-4">
+          <div className="flex justify-between pt-4">
             <button
               type="button"
-              onClick={() => router.back()}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-              disabled={isLoading}
+              onClick={() => router.push(`/${lang}/clients`)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
             >
-              Отказ
+              {cancelButtonText}
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
               disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 disabled:bg-blue-400"
             >
-              {isLoading ? 'Запазване...' : isEditMode ? 'Запази промените' : 'Добави клиент'}
+              {isLoading ? loadingText : saveButtonText}
             </button>
           </div>
         </div>
