@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -28,6 +28,10 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
     engineSize: '',
     vin: '',
   });
+
+  // Use refs to track previous values to avoid dependency array issues
+  const prevMakeRef = useRef(formData.make);
+  const prevModelRef = useRef(formData.model);
 
   const [isLoading, setIsLoading] = useState(false);
   const [carMakes, setCarMakes] = useState<string[]>([]);
@@ -95,6 +99,12 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
 
   // Get car models when make changes
   useEffect(() => {
+    // Only run effect if make has actually changed
+    if (prevMakeRef.current === formData.make) return;
+
+    // Update ref with current make value
+    prevMakeRef.current = formData.make;
+
     if (!formData.make) {
       setCarModels([]);
       return;
@@ -125,10 +135,16 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
         setLoading(prev => ({ ...prev, models: false }));
       }
     }, 300);
-  }, [formData.make, isEditMode]);
+  }, [formData.make, isEditMode, formData.model]); // Include formData.model to satisfy ESLint
 
   // Get engine sizes when model changes
   useEffect(() => {
+    // Only run effect if model has actually changed
+    if (prevModelRef.current === formData.model) return;
+
+    // Update ref with current model value
+    prevModelRef.current = formData.model;
+
     if (!formData.make || !formData.model) {
       setEngineSizes([]);
       return;
@@ -167,7 +183,7 @@ export default function ClientForm({ lang = 'en' }: ClientFormProps) {
         setLoading(prev => ({ ...prev, details: false }));
       }
     }, 300);
-  }, [formData.make, formData.model, isEditMode]);
+  }, [formData.make, formData.model, isEditMode, formData.engineSize]); // Include formData.engineSize to satisfy ESLint
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
