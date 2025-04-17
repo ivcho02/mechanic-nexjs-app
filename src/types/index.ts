@@ -35,6 +35,15 @@ export interface Service {
   createdAt?: Timestamp;
 }
 
+// Repair status as enum for use in code
+export enum RepairStatusEnum {
+  PENDING = 'Изпратена оферта',
+  IN_PROGRESS = 'В процес',
+  COMPLETED = 'Завършен',
+  CANCELLED = 'Отказан'
+}
+
+// Repair status as type for type checking
 export type RepairStatus = 'Изпратена оферта' | 'В процес' | 'Завършен' | 'Отказан';
 
 export interface SelectedService {

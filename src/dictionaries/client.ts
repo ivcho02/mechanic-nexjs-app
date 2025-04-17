@@ -7,6 +7,11 @@ export type Dictionary = {
     clients: string;
     repairs: string;
     viewAll: string;
+    statistics?: string;
+    activeRepairs?: string;
+    completedRepairs?: string;
+    totalClients?: string;
+    totalServices?: string;
   };
   nav: {
     home: string;
@@ -138,6 +143,20 @@ export type Dictionary = {
     servicesList: string;
     actions: string;
     date: string;
+  };
+  admin?: {
+    title: string;
+    addMechanic: string;
+    addMechanicDescription: string;
+    emailAddress: string;
+    emailPlaceholder: string;
+    addAsMechanic: string;
+    alreadyMechanic: string;
+    addSuccess: string;
+    addError: string;
+    emptyEmail: string;
+    accessRequired: string;
+    accessMessage: string;
   };
 };
 

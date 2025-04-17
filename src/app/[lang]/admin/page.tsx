@@ -41,23 +41,24 @@ export default function AdminPage() {
     setError('');
 
     if (!email.trim()) {
-      setError('Please enter an email address');
+      setError(dict?.admin?.emptyEmail || 'Please enter an email address');
       return;
     }
 
     // Check if already admin
     if (isEmailAdmin(email)) {
-      setError('This email is already registered as a mechanic');
+      setError(dict?.admin?.alreadyMechanic || 'This email is already registered as a mechanic');
       return;
     }
 
     // Add to admin list
     const success = addAdminEmail(email);
     if (success) {
-      setMessage(`${email} has been added as a mechanic`);
+      const successMessage = dict?.admin?.addSuccess?.replace('{email}', email) || `${email} has been added as a mechanic`;
+      setMessage(successMessage);
       setEmail('');
     } else {
-      setError('Failed to add email as mechanic');
+      setError(dict?.admin?.addError || 'Failed to add email as mechanic');
     }
   };
 
@@ -69,26 +70,26 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <div className="p-8 text-center">
-        <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
-        <p>You need mechanic privileges to access this page.</p>
+        <h1 className="text-2xl font-bold mb-4">{dict.admin?.accessRequired || 'Admin Access Required'}</h1>
+        <p>{dict.admin?.accessMessage || 'You need mechanic privileges to access this page.'}</p>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Mechanic Management</h1>
+      <h1 className="text-2xl font-bold mb-6">{dict.admin?.title || 'Mechanic Management'}</h1>
 
       <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4">Add New Mechanic</h2>
+        <h2 className="text-xl font-semibold mb-4">{dict.admin?.addMechanic || 'Add New Mechanic'}</h2>
         <p className="mb-4 text-gray-600">
-          Add a customer&apos;s email to give them mechanic (admin) privileges. This will allow them to manage clients, services, and all repairs.
+          {dict.admin?.addMechanicDescription || 'Add a customer\'s email to give them mechanic (admin) privileges. This will allow them to manage clients, services, and all repairs.'}
         </p>
 
         <form onSubmit={handleSubmit} className="max-w-md">
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
+              {dict.admin?.emailAddress || 'Email Address'}
             </label>
             <input
               type="email"
@@ -96,7 +97,7 @@ export default function AdminPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="customer@example.com"
+              placeholder={dict.admin?.emailPlaceholder || 'customer@example.com'}
               required
             />
           </div>
@@ -117,21 +118,9 @@ export default function AdminPage() {
             type="submit"
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            Add as Mechanic
+            {dict.admin?.addAsMechanic || 'Add as Mechanic'}
           </button>
         </form>
-      </div>
-
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Important Note</h2>
-        <p className="text-gray-600">
-          This implementation is for demonstration purposes only. In a production environment, you should:
-        </p>
-        <ul className="list-disc ml-5 mt-2 text-gray-600">
-          <li>Store admin users in a database collection rather than in code</li>
-          <li>Use Firebase Auth custom claims or roles for proper permission management</li>
-          <li>Add server-side validation to ensure only authorized users can promote others</li>
-        </ul>
       </div>
     </div>
   );

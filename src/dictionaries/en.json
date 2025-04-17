@@ -2,10 +2,12 @@
   "home": {
     "title": "Auto Mechanic Service",
     "subtitle": "Professional car repair and maintenance",
-    "services": "Our Services",
-    "clients": "Our Clients",
-    "repairs": "Recent Repairs",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "statistics": "Workshop Statistics",
+    "activeRepairs": "Active Repairs",
+    "completedRepairs": "Completed Repairs",
+    "totalClients": "Total Clients",
+    "totalServices": "Available Services"
   },
   "nav": {
     "home": "Home",
@@ -141,5 +143,19 @@
     "passwordsDontMatch": "Passwords do not match",
     "logoutSuccess": "Successfully logged out",
     "loginRequired": "Please log in to view this page"
+  },
+  "admin": {
+    "title": "Mechanic Management",
+    "addMechanic": "Add New Mechanic",
+    "addMechanicDescription": "Add a customer's email to give them mechanic (admin) privileges. This will allow them to manage clients, services, and all repairs.",
+    "emailAddress": "Email Address",
+    "emailPlaceholder": "customer@example.com",
+    "addAsMechanic": "Add as Mechanic",
+    "alreadyMechanic": "This email is already registered as a mechanic",
+    "addSuccess": "{email} has been added as a mechanic",
+    "addError": "Failed to add email as mechanic",
+    "emptyEmail": "Please enter an email address",
+    "accessRequired": "Admin Access Required",
+    "accessMessage": "You need mechanic privileges to access this page."
   }
 }
