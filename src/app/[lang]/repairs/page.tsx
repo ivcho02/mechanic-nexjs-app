@@ -145,7 +145,7 @@ export default function RepairsPage() {
         console.error('Error loading pdfmake:', err);
       });
     }
-  }, [lang, user, authLoading, router]);
+  }, [lang, user, authLoading, router, loadRepairs]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
