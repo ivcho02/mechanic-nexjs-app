@@ -49,14 +49,6 @@ export default function MyRepairsPage() {
       // Get ALL repairs to analyze
       const repairsRef = collection(db, 'repairs');
 
-      console.log("Client info for matching:", {
-        email: user.email,
-        name: clientData.ownerName,
-        phone: clientData.phone,
-        make: clientData.make,
-        model: clientData.model
-      });
-
       // Get all repairs
       const allRepairsQuery = query(
         repairsRef,
@@ -64,9 +56,6 @@ export default function MyRepairsPage() {
       );
 
       const allRepairsSnapshot = await getDocs(allRepairsQuery);
-
-      console.log(`Found ${allRepairsSnapshot.docs.length} total repairs in database`);
-
       const allRepairsWithReason: Array<{repair: RepairInfo, reason: string, matched: boolean}> = [];
 
       // Combine results and remove duplicates
@@ -143,13 +132,8 @@ export default function MyRepairsPage() {
         return dateB.getTime() - dateA.getTime();
       });
 
-      console.log(`Found ${repairsData.length} repairs that matched this client`);
-      console.log("All repairs with match status:", allRepairsWithReason);
-
       // If the repairs weren't matched, we will store ANY repairs where any field includes any of the client's data
       if (repairsData.length === 0) {
-        console.log("No matches found. Checking for partial matches...");
-
         allRepairsSnapshot.docs.forEach(doc => {
           const repairData = doc.data();
           const repairDataString = JSON.stringify(repairData).toLowerCase();
@@ -162,7 +146,6 @@ export default function MyRepairsPage() {
             (clientName && repairDataString.includes(clientName)) ||
             (clientPhone && repairDataString.includes(clientPhone))
           ) {
-            console.log("Found partial match:", { id: doc.id, ...repairData });
             if (!repairsMap.has(doc.id)) {
               repairsMap.set(doc.id, { id: doc.id, ...repairData });
             }
@@ -171,7 +154,6 @@ export default function MyRepairsPage() {
 
         // Update repairsData with new matches
         const newRepairsData = Array.from(repairsMap.values()) as Repair[];
-        console.log(`Found ${newRepairsData.length} repairs after partial matching`);
 
         // Only update if we found new matches
         if (newRepairsData.length > 0) {
@@ -181,8 +163,6 @@ export default function MyRepairsPage() {
           const recentRepairs = allRepairsSnapshot.docs
             .slice(0, 5)
             .map(doc => ({ id: doc.id, ...doc.data() } as Repair));
-
-          console.log("No matches at all. Here are the 5 most recent repairs for reference:", recentRepairs);
 
           // Set repairs to an empty array since no matches
           setRepairs([]);

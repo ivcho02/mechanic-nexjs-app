@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, AuthError } from 'firebase/auth';
 import { createClientFromAuth } from '@/helpers/firebaseHelpers';
 
 const firebaseConfig = {
@@ -31,17 +31,39 @@ export const loginWithEmail = async (email: string, password: string) => {
   }
 };
 
-export const registerWithEmail = async (email: string, password: string) => {
+export const registerWithEmail = async (
+  email: string,
+  password: string,
+  name?: string,
+  phone?: string
+): Promise<{ user?: User; error?: string }> => {
   try {
+    // Create user with email and password
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-    // Create a client record for the new user
-    await createClientFromAuth(userCredential.user);
+    // If name or phone are provided, create a client record
+    if (name || phone) {
+      const user = userCredential.user;
+      // Create client record
+      await createClientFromAuth(user, name, phone);
+    }
 
-    return { user: userCredential.user, error: null };
-  } catch (error: unknown) {
-    const firebaseError = error as { message: string };
-    return { user: null, error: firebaseError.message };
+    return { user: userCredential.user };
+  } catch (error) {
+    const errorCode = (error as AuthError).code;
+    const errorMessage = (error as AuthError).message;
+    console.error('Error registering user:', errorCode, errorMessage);
+
+    // Handle specific error cases
+    if (errorCode === 'auth/email-already-in-use') {
+      return { error: 'This email is already registered.' };
+    } else if (errorCode === 'auth/invalid-email') {
+      return { error: 'Invalid email address.' };
+    } else if (errorCode === 'auth/weak-password') {
+      return { error: 'Password is too weak.' };
+    }
+
+    return { error: errorMessage };
   }
 };
 
