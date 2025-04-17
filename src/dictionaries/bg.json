@@ -2,12 +2,17 @@
   "home": {
     "title": "Автосервиз",
     "subtitle": "Професионален ремонт и поддръжка на автомобили",
+    "services": "Нашите услуги",
+    "clients": "Нашите клиенти",
+    "repairs": "Последни ремонти",
     "viewAll": "Виж всички",
     "statistics": "Статистика на сервиза",
     "activeRepairs": "Активни ремонти",
     "completedRepairs": "Завършени ремонти",
     "totalClients": "Общо клиенти",
-    "totalServices": "Налични услуги"
+    "totalServices": "Налични услуги",
+    "helloMechanic": "Здравей, Механик",
+    "helloClient": "Здравей, Клиент"
   },
   "nav": {
     "home": "Начало",

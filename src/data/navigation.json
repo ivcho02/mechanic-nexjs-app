@@ -8,14 +8,6 @@
       "icon": "home"
     },
     {
-      "id": "my-repairs",
-      "text": "My Repairs",
-      "key": "myRepairs",
-      "url": "/my-repairs",
-      "icon": "wrench",
-      "clientOnly": true
-    },
-    {
       "id": "clients",
       "text": "Clients",
       "key": "clients",

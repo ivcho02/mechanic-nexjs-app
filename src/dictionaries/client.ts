@@ -12,6 +12,8 @@ export type Dictionary = {
     completedRepairs?: string;
     totalClients?: string;
     totalServices?: string;
+    helloMechanic?: string;
+    helloClient?: string;
   };
   nav: {
     home: string;

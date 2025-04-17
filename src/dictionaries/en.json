@@ -2,12 +2,17 @@
   "home": {
     "title": "Auto Mechanic Service",
     "subtitle": "Professional car repair and maintenance",
+    "services": "Our Services",
+    "clients": "Our Clients",
+    "repairs": "Recent Repairs",
     "viewAll": "View All",
     "statistics": "Workshop Statistics",
     "activeRepairs": "Active Repairs",
     "completedRepairs": "Completed Repairs",
     "totalClients": "Total Clients",
-    "totalServices": "Available Services"
+    "totalServices": "Available Services",
+    "helloMechanic": "Hello, Mechanic",
+    "helloClient": "Hello, Client"
   },
   "nav": {
     "home": "Home",
