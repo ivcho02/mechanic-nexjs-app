@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, AuthError } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, AuthError, updateProfile } from 'firebase/auth';
 import { createClientFromAuth } from '@/helpers/firebaseHelpers';
 
 const firebaseConfig = {
@@ -40,13 +40,17 @@ export const registerWithEmail = async (
   try {
     // Create user with email and password
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-    // If name or phone are provided, create a client record
-    if (name || phone) {
-      const user = userCredential.user;
-      // Create client record
-      await createClientFromAuth(user, name, phone);
+    // If name is provided, update the user profile
+    if (name) {
+      await updateProfile(user, {
+        displayName: name
+      });
     }
+
+    // Create a client record
+    await createClientFromAuth(user, phone);
 
     return { user: userCredential.user };
   } catch (error) {

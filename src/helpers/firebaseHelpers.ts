@@ -123,7 +123,7 @@ export const deleteClient = async (clientId: string): Promise<void> => {
 /**
  * Creates a new client record from a Firebase auth user
  */
-export const createClientFromAuth = async (user: User): Promise<string | null> => {
+export const createClientFromAuth = async (user: User, phone?: string): Promise<string | null> => {
   // Check if a client with this email already exists
   try {
     const clientsCollection = collection(db, 'clients');
@@ -144,7 +144,7 @@ export const createClientFromAuth = async (user: User): Promise<string | null> =
     const clientData = {
       ownerName: user.displayName || user.email?.split('@')[0] || 'New Customer',
       email: user.email,
-      phone: user.phoneNumber || '',
+      phone: phone || user.phoneNumber || '',
       make: '',
       model: '',
       engineSize: '',
