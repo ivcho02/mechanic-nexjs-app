@@ -5,6 +5,7 @@ import { locales, defaultLocale } from '@/middleware';
 import NavBar from '@/components/navigation/NavBar';
 import '../globals.css';
 import { AuthProvider } from '@/lib/authContext';
+import type { Metadata } from 'next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -12,20 +13,26 @@ export async function generateStaticParams() {
   return locales.map(lang => ({ lang }));
 }
 
-export default function RootLayout({
-  children,
-  params,
-}: {
+export async function generateMetadata({ params }: { params: { lang: string } }): Promise<Metadata> {
+  // Access language-specific metadata
+  const lang = params.lang || defaultLocale;
+
+  return {
+    title: lang === 'bg' ? 'Автомеханик Услуги' : 'Auto Mechanic Service',
+    description: lang === 'bg'
+      ? 'Професионален автомобилен ремонт и поддръжка'
+      : 'Professional car repair and maintenance',
+  };
+}
+
+type LayoutProps = {
   children: React.ReactNode;
   params: { lang: string };
-}) {
-  // Cast params as any to bypass the type-checking
-  // This is a workaround for the Next.js warning about using params.lang
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const langParam = (params as any).lang || defaultLocale;
+};
 
+export default function RootLayout({ children, params }: LayoutProps) {
   // Validate the language parameter
-  const lang = locales.includes(langParam) ? langParam : defaultLocale;
+  const lang = locales.includes(params.lang) ? params.lang : defaultLocale;
 
   return (
     <html lang={lang}>

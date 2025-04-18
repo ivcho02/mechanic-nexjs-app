@@ -133,7 +133,9 @@
     "cancel": "Cancel",
     "noServices": "No services found",
     "servicesList": "Services List",
-    "notAvailable": "N/A"
+    "notAvailable": "N/A",
+    "deleteConfirmation": "Are you sure you want to delete this service?",
+    "deleteConfirmationMessage": "This action cannot be undone."
   },
   "auth": {
     "login": "Sign in to your account",

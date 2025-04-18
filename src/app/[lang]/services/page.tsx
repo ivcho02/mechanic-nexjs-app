@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { Service } from '@/types';
 import { useParams } from 'next/navigation';
 import { getDictionaryClient, Dictionary } from '@/dictionaries/client';
-import { fetchServices } from '@/helpers/firebaseHelpers';
+import { fetchServices, deleteService } from '@/helpers/firebaseHelpers';
 
 // Extend the Dictionary type to include missing properties
 type ExtendedDictionary = Dictionary & {
@@ -15,6 +15,8 @@ type ExtendedDictionary = Dictionary & {
     priceUnit: string;
     addService: string;
     name: string;
+    deleteConfirmation: string;
+    deleteConfirmationMessage: string;
   }
 };
 
@@ -30,6 +32,8 @@ export default function ServicesPage() {
   });
   const [dict, setDict] = useState<ExtendedDictionary | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDictionary = async () => {
@@ -81,12 +85,27 @@ export default function ServicesPage() {
     }));
   };
 
-  const formatDate = (timestamp?: { seconds: number; nanoseconds: number }) => {
-    if (!timestamp || timestamp.seconds === undefined) {
-      return dict?.services.notAvailable || 'N/A';
+  const confirmDelete = (serviceId: string) => {
+    setServiceToDelete(serviceId);
+    setIsDeleting(true);
+  };
+
+  const handleDelete = async () => {
+    if (!serviceToDelete) return;
+
+    try {
+      await deleteService(serviceToDelete);
+      setServices(services.filter(service => service.id !== serviceToDelete));
+      setIsDeleting(false);
+      setServiceToDelete(null);
+    } catch (error) {
+      console.error('Error deleting service:', error);
     }
-    const date = new Date(timestamp.seconds * 1000);
-    return date.toLocaleDateString(lang === 'bg' ? 'bg-BG' : 'en-US');
+  };
+
+  const cancelDelete = () => {
+    setIsDeleting(false);
+    setServiceToDelete(null);
   };
 
   if (!mounted || !dict) {
@@ -165,33 +184,42 @@ export default function ServicesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {dict.services.date}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {dict.services.name}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {dict.services.price}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {dict.services.description}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                    {dict.services.actions}
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {services.map((service) => (
                   <tr key={service.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(service.createdAt)}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {service.name}
+                      <div className="relative group">
+                        <span>{service.name}</span>
+                        {service.description && (
+                          <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
+                            {service.description}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {service.price} {dict.services.priceUnit}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {service.description}
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                      <button
+                        onClick={() => confirmDelete(service.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title={dict.services.delete}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -202,6 +230,31 @@ export default function ServicesPage() {
           )}
         </div>
       </div>
+
+      {isDeleting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-medium mb-4">{dict.services.deleteConfirmation || "Are you sure you want to delete this service?"}</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {dict.services.deleteConfirmationMessage || "This action cannot be undone."}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md"
+              >
+                {dict.services.cancel}
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-md"
+              >
+                {dict.services.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

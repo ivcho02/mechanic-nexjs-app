@@ -133,7 +133,9 @@
     "cancel": "Отказ",
     "noServices": "Няма намерени услуги",
     "servicesList": "Списък с услуги",
-    "notAvailable": "Н/П"
+    "notAvailable": "Н/П",
+    "deleteConfirmation": "Сигурни ли сте, че искате да изтриете тази услуга?",
+    "deleteConfirmationMessage": "Това действие не може да бъде отменено."
   },
   "auth": {
     "login": "Влезте в акаунта си",

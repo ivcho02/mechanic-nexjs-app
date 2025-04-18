@@ -121,6 +121,19 @@ export const deleteClient = async (clientId: string): Promise<void> => {
 };
 
 /**
+ * Deletes a service by ID
+ */
+export const deleteService = async (serviceId: string): Promise<void> => {
+  try {
+    const serviceRef = doc(db, 'services', serviceId);
+    await deleteDoc(serviceRef);
+  } catch (error) {
+    console.error('Error deleting service:', error);
+    throw error;
+  }
+};
+
+/**
  * Creates a new client record from a Firebase auth user
  */
 export const createClientFromAuth = async (user: User, phone?: string): Promise<string | null> => {
